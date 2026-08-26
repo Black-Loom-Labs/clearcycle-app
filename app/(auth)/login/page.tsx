@@ -1,10 +1,11 @@
 "use client"
 
 import * as React from 'react'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { DEV_MODE, API_BASE, setTokens } from '@/lib/auth'
 
 export default function LoginPage() {
@@ -48,9 +49,8 @@ export default function LoginPage() {
         )}
         <Card className="border-[#E4E4EF]">
           <CardHeader className="items-center text-center">
-            <span className="text-2xl font-bold text-[#1E6BFF]">ClearCycle</span>
-            <CardTitle className="mt-2">Sign in to ClearCycle</CardTitle>
-            <CardDescription>Insurance claims pipeline for Indian hospitals</CardDescription>
+            <Image src="/logo.svg" alt="ClearCycle" width={160} height={40} className="mx-auto" priority />
+            <CardTitle className="mt-2">Sign in</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
