@@ -1,13 +1,7 @@
-import { API_BASE } from './config'
+import { apiFetch as authFetch } from './auth'
 
 async function apiFetch<T = unknown>(path: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options?.headers,
-    },
-  })
+  const res = await authFetch(path, options)
   if (!res.ok) {
     let detail = ''
     try {
@@ -22,9 +16,10 @@ async function apiFetch<T = unknown>(path: string, options?: RequestInit): Promi
 }
 
 // Multipart requests must NOT set a Content-Type header — the browser needs
-// to add its own with the multipart boundary.
+// to add its own with the multipart boundary. authFetch skips it automatically
+// when the body is FormData.
 async function apiFetchForm<T = unknown>(path: string, body: FormData): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, { method: 'POST', body })
+  const res = await authFetch(path, { method: 'POST', body })
   if (!res.ok) {
     let detail = ''
     try {

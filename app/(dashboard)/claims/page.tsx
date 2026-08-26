@@ -29,6 +29,8 @@ import { api, type Claim, type AdjudicationResult } from '@/lib/api'
 import { getCarrierName } from '@/lib/carriers'
 import { useHospital } from '@/lib/hospital-context'
 import { formatINR, formatRelativeTime } from '@/lib/utils'
+import { DEV_MODE } from '@/lib/config'
+import { canUpload, getCurrentRole, type Role } from '@/lib/roles'
 import { NewClaimDialog } from './new-claim-dialog'
 
 const PER_PAGE = 25
@@ -45,6 +47,14 @@ const STATUS_OPTIONS = [
 
 export default function ClaimsPage() {
   const { hospitalId } = useHospital()
+
+  // Matches the SSR-safe pattern in the dashboard layout: DEV_MODE is a
+  // build-time constant (safe to read immediately), the real role from the
+  // token is only available in the browser and is filled in after mount.
+  const [role, setRole] = React.useState<Role>(DEV_MODE ? 'admin' : 'read_only')
+  React.useEffect(() => {
+    setRole(getCurrentRole())
+  }, [])
 
   // Server-paginated results (used when there's no active search).
   const [claims, setClaims] = React.useState<Claim[] | null>(null)
@@ -187,7 +197,7 @@ export default function ClaimsPage() {
             </SelectContent>
           </Select>
         </div>
-        <NewClaimDialog onSubmitted={load} />
+        {canUpload(role) && <NewClaimDialog onSubmitted={load} />}
       </div>
 
       {error ? (

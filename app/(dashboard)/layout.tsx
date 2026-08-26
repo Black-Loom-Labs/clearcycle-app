@@ -3,7 +3,7 @@
 import * as React from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import {
   LayoutDashboard,
   FileText,
@@ -28,6 +28,8 @@ import {
 import { ToastProvider } from '@/components/toast'
 import { HospitalProvider, useHospital } from '@/lib/hospital-context'
 import { DEV_MODE } from '@/lib/config'
+import { clearTokens, getUserFromToken } from '@/lib/auth'
+import { canAccessRoute, getCurrentRole, type Role } from '@/lib/roles'
 
 const NAV_ITEMS = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -36,6 +38,18 @@ const NAV_ITEMS = [
   { href: '/denial-intel', label: 'Denial Intel', icon: AlertTriangle },
   { href: '/settings', label: 'Settings', icon: Settings },
 ]
+
+const ROLE_LABELS: Record<Role, string> = {
+  read_only: 'Read Only',
+  billing_staff: 'Billing Staff',
+  admin: 'Hospital Admin',
+}
+
+function initialsFrom(value: string): string {
+  const parts = value.split(/[\s@.]+/).filter(Boolean)
+  if (parts.length === 0) return '?'
+  return (parts[0][0] + (parts[1]?.[0] ?? '')).toUpperCase()
+}
 
 function PageTitle() {
   const pathname = usePathname()
@@ -70,8 +84,23 @@ function HospitalSelector() {
   )
 }
 
-function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
+function Sidebar({
+  open,
+  onClose,
+  role,
+  userName,
+  roleLabel,
+  initials,
+}: {
+  open: boolean
+  onClose: () => void
+  role: Role
+  userName: string
+  roleLabel: string
+  initials: string
+}) {
   const pathname = usePathname()
+  const navItems = NAV_ITEMS.filter((item) => canAccessRoute(role, item.href))
 
   return (
     <>
@@ -91,7 +120,7 @@ function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
           <Image src="/logo.svg" alt="ClearCycle" width={160} height={40} priority />
         </div>
         <nav className="flex flex-1 flex-col gap-1 p-3">
-          {NAV_ITEMS.map((item) => {
+          {navItems.map((item) => {
             const active =
               pathname === item.href || pathname.startsWith(item.href + '/')
             const Icon = item.icon
@@ -115,11 +144,11 @@ function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
         </nav>
         <div className="flex items-center gap-3 border-t border-[#E4E4EF] p-4">
           <Avatar>
-            <AvatarFallback>DA</AvatarFallback>
+            <AvatarFallback>{initials}</AvatarFallback>
           </Avatar>
           <div className="flex flex-col leading-tight">
-            <span className="text-sm font-medium text-[#0A0A0F]">Dev Admin</span>
-            <span className="text-xs text-[#5C5C6B]">Hospital Admin</span>
+            <span className="text-sm font-medium text-[#0A0A0F]">{userName}</span>
+            <span className="text-xs text-[#5C5C6B]">{roleLabel}</span>
           </div>
         </div>
       </aside>
@@ -128,11 +157,59 @@ function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
 }
 
 function DashboardShell({ children }: { children: React.ReactNode }) {
+  const router = useRouter()
+  const pathname = usePathname()
   const [sidebarOpen, setSidebarOpen] = React.useState(false)
+
+  // DEV_MODE is a build-time constant, so this initial value is identical on
+  // the server and first client render — no hydration mismatch. Real,
+  // token-derived user info only exists in the browser, so it's filled in
+  // after mount below.
+  const [role, setRole] = React.useState<Role>(DEV_MODE ? 'admin' : 'read_only')
+  const [displayUser, setDisplayUser] = React.useState({
+    name: DEV_MODE ? 'Dev Admin' : '',
+    roleLabel: DEV_MODE ? ROLE_LABELS.admin : '',
+    initials: DEV_MODE ? 'DA' : '?',
+  })
+
+  React.useEffect(() => {
+    if (DEV_MODE) return
+    const currentRole = getCurrentRole()
+    setRole(currentRole)
+    const user = getUserFromToken()
+    if (user) {
+      const name = user.name || user.email || 'User'
+      setDisplayUser({
+        name,
+        roleLabel: ROLE_LABELS[currentRole],
+        initials: initialsFrom(name),
+      })
+    }
+  }, [])
+
+  // Redirect away from routes the current role isn't allowed to see.
+  React.useEffect(() => {
+    if (DEV_MODE) return
+    if (!canAccessRoute(role, pathname)) {
+      router.replace('/dashboard')
+    }
+  }, [role, pathname, router])
+
+  function handleSignOut() {
+    clearTokens()
+    router.push('/login')
+  }
 
   return (
     <div className="min-h-screen bg-[#F7F8FA]">
-      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <Sidebar
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        role={role}
+        userName={displayUser.name}
+        roleLabel={displayUser.roleLabel}
+        initials={displayUser.initials}
+      />
 
       <header className="fixed top-0 right-0 left-0 z-30 flex h-14 items-center justify-between border-b border-[#E4E4EF] bg-white px-4 md:left-[240px] md:px-6">
         <div className="flex items-center gap-3">
@@ -152,15 +229,15 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
           <DropdownMenu>
             <DropdownMenuTrigger>
               <Avatar size="sm">
-                <AvatarFallback>DA</AvatarFallback>
+                <AvatarFallback>{displayUser.initials}</AvatarFallback>
               </Avatar>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuGroup>
-                <DropdownMenuLabel>Dev Admin</DropdownMenuLabel>
+                <DropdownMenuLabel>{displayUser.name}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem>Profile</DropdownMenuItem>
-                <DropdownMenuItem>Sign out</DropdownMenuItem>
+                <DropdownMenuItem onClick={handleSignOut}>Sign out</DropdownMenuItem>
               </DropdownMenuGroup>
             </DropdownMenuContent>
           </DropdownMenu>

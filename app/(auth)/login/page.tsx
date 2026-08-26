@@ -5,16 +5,37 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { DEV_MODE } from '@/lib/config'
+import { DEV_MODE, API_BASE, setTokens } from '@/lib/auth'
 
 export default function LoginPage() {
   const router = useRouter()
   const [email, setEmail] = React.useState('')
   const [password, setPassword] = React.useState('')
+  const [error, setError] = React.useState('')
+  const [loading, setLoading] = React.useState(false)
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    router.push('/dashboard')
+    setError('')
+    setLoading(true)
+    try {
+      const res = await fetch(`${API_BASE}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      })
+      const data = await res.json().catch(() => null)
+      if (!res.ok) {
+        setError(data?.detail || 'Unable to sign in. Check your credentials and try again.')
+        return
+      }
+      setTokens(data.access_token, data.refresh_token, data.id_token)
+      router.push('/dashboard')
+    } catch {
+      setError('Unable to reach the server. Please try again.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -22,7 +43,7 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         {DEV_MODE && (
           <div className="mb-4 rounded-lg border border-[#1E6BFF]/30 bg-[#EAF2FF] px-3 py-2 text-center text-sm text-[#1E6BFF]">
-            Dev mode active — any credentials accepted
+            Dev Mode — auth bypassed
           </div>
         )}
         <Card className="border-[#E4E4EF]">
@@ -59,10 +80,27 @@ export default function LoginPage() {
                   required
                 />
               </div>
-              <Button type="submit" className="mt-2 w-full bg-[#1E6BFF] hover:bg-[#1E6BFF]/90">
-                Sign In
+              <Button
+                type="submit"
+                disabled={loading}
+                className="mt-2 w-full bg-[#1E6BFF] hover:bg-[#1E6BFF]/90"
+              >
+                {loading ? 'Signing in…' : 'Sign In'}
               </Button>
+              {error && (
+                <p className="text-center text-sm text-red-600">{error}</p>
+              )}
             </form>
+            {DEV_MODE && (
+              <Button
+                type="button"
+                variant="outline"
+                className="mt-3 w-full border-[#E4E4EF]"
+                onClick={() => router.push('/dashboard')}
+              >
+                Enter dashboard →
+              </Button>
+            )}
           </CardContent>
         </Card>
       </div>
