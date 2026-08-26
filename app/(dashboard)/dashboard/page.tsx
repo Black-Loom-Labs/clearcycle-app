@@ -22,6 +22,76 @@ import { resolveCarrierShortName, useCarrierDirectory } from '@/lib/carriers'
 import { useHospital } from '@/lib/hospital-context'
 import { formatINR, formatINRFull } from '@/lib/utils'
 
+// Carrier names can be long — wrap the axis label onto a second line
+// (greedy word-wrap, ~14 chars/line) instead of truncating or overlapping.
+// A very long single word still gets an ellipsis on the second line so it
+// can't overflow past the tick's own slot.
+const AXIS_LABEL_LINE_LENGTH = 14
+
+function wrapAxisLabel(value: string): [string, string] {
+  const words = value.split(' ')
+  let line1 = ''
+  let line2 = ''
+  for (const word of words) {
+    const candidate = line1 ? `${line1} ${word}` : word
+    if (line2 === '' && candidate.length <= AXIS_LABEL_LINE_LENGTH) {
+      line1 = candidate
+    } else {
+      line2 = line2 ? `${line2} ${word}` : word
+    }
+  }
+  if (line2.length > AXIS_LABEL_LINE_LENGTH) {
+    line2 = `${line2.slice(0, AXIS_LABEL_LINE_LENGTH - 1)}…`
+  }
+  return [line1, line2]
+}
+
+// Recharts clones this element and injects x/y/payload at render time, so
+// none of these props are actually provided at the JSX call site below.
+function CarrierAxisTick({ x = 0, y = 0, payload }: { x?: number; y?: number; payload?: { value: string } }) {
+  const [line1, line2] = wrapAxisLabel(payload?.value ?? '')
+  return (
+    <text x={x} y={y} textAnchor="middle" fontSize={12} fill="#5C5C6B">
+      <tspan x={x} dy="0.9em">{line1}</tspan>
+      {line2 && <tspan x={x} dy="1.1em">{line2}</tspan>}
+    </text>
+  )
+}
+
+// Recharts colors each tooltip line by its series' bar fill by default —
+// "Total Billed" uses the light #E4E4EF bar color, which is unreadable as
+// text on a white tooltip. Override just that entry's text color; the bars
+// and legend swatches themselves are untouched.
+const TOOLTIP_TEXT_COLORS: Record<string, string> = {
+  total_billed: '#5C5C6B',
+  total_approved: '#1E6BFF',
+}
+
+function CarrierTooltip({
+  active,
+  payload,
+  label,
+}: {
+  active?: boolean
+  payload?: { dataKey?: string; name?: string; value?: number; color?: string }[]
+  label?: string
+}) {
+  if (!active || !payload?.length) return null
+  return (
+    <div className="rounded-lg border border-[#E4E4EF] bg-white px-3 py-2 text-xs shadow-md">
+      <div className="mb-1 font-medium text-[#0A0A0F]">{label}</div>
+      {payload.map((entry) => (
+        <div
+          key={entry.dataKey}
+          style={{ color: TOOLTIP_TEXT_COLORS[entry.dataKey ?? ''] ?? entry.color }}
+        >
+          {entry.name} : {formatINRFull(Number(entry.value))}
+        </div>
+      ))}
+    </div>
+  )
+}
+
 const AGING_LABELS: Record<string, string> = {
   '0_30': '0-30',
   '31_60': '31-60',
@@ -145,16 +215,13 @@ export default function DashboardPage() {
               <ResponsiveContainer width="100%" height={280}>
                 <BarChart data={carriers}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#E4E4EF" />
-                  <XAxis dataKey="carrier" tick={{ fontSize: 12, fill: '#5C5C6B' }} />
+                  <XAxis dataKey="carrier" interval={0} height={46} tick={<CarrierAxisTick />} />
                   <YAxis
                     tick={{ fontSize: 12, fill: '#5C5C6B' }}
                     tickFormatter={(value) => formatINR(Number(value))}
                     width={64}
                   />
-                  <Tooltip
-                    formatter={(value) => formatINRFull(Number(value))}
-                    contentStyle={{ borderRadius: 8, borderColor: '#E4E4EF', fontSize: 12 }}
-                  />
+                  <Tooltip content={<CarrierTooltip />} />
                   <Legend wrapperStyle={{ fontSize: 12 }} />
                   <Bar dataKey="total_billed" name="Total Billed" fill="#E4E4EF" radius={[4, 4, 0, 0]} />
                   <Bar dataKey="total_approved" name="Total Approved" fill="#1E6BFF" radius={[4, 4, 0, 0]} />
