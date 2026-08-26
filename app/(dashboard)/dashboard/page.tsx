@@ -18,7 +18,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { ErrorState, EmptyState } from '@/components/api-states'
 import { collectionRateColor } from '@/components/status-badge'
 import { api, type ARDashboardResponse } from '@/lib/api'
-import { getCarrierShortName } from '@/lib/carriers'
+import { resolveCarrierShortName, useCarrierDirectory } from '@/lib/carriers'
 import { useHospital } from '@/lib/hospital-context'
 import { formatINR, formatINRFull } from '@/lib/utils'
 
@@ -31,6 +31,7 @@ const AGING_LABELS: Record<string, string> = {
 
 export default function DashboardPage() {
   const { hospitalId } = useHospital()
+  const carrierDirectory = useCarrierDirectory()
   const [data, setData] = React.useState<ARDashboardResponse | null>(null)
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
@@ -57,7 +58,7 @@ export default function DashboardPage() {
   const collectionRate = summary.collection_rate_pct ?? 0
 
   const carriers = (carrier_breakdown ?? []).map((c) => ({
-    carrier: getCarrierShortName(c.carrier_id),
+    carrier: resolveCarrierShortName(carrierDirectory, c.carrier_id),
     total_billed: c.total_billed_inr,
     total_approved: c.total_approved_inr,
   }))

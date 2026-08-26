@@ -26,7 +26,7 @@ import { CopyableId } from '@/components/copyable-id'
 import { PaginationFooter } from '@/components/pagination-footer'
 import { StatusBadge, readinessColor } from '@/components/status-badge'
 import { api, type Claim, type AdjudicationResult } from '@/lib/api'
-import { getCarrierName } from '@/lib/carriers'
+import { resolveCarrierName, useCarrierDirectory } from '@/lib/carriers'
 import { useHospital } from '@/lib/hospital-context'
 import { formatINR, formatRelativeTime } from '@/lib/utils'
 import { DEV_MODE } from '@/lib/config'
@@ -47,6 +47,7 @@ const STATUS_OPTIONS = [
 
 export default function ClaimsPage() {
   const { hospitalId } = useHospital()
+  const carrierDirectory = useCarrierDirectory()
 
   // Matches the SSR-safe pattern in the dashboard layout: DEV_MODE is a
   // build-time constant (safe to read immediately), the real role from the
@@ -259,7 +260,7 @@ export default function ClaimsPage() {
                         </span>
                       </TableCell>
                       <TableCell className="text-sm text-[#5C5C6B]">
-                        {adj?.plan_name ?? getCarrierName(adj?.carrier_id)}
+                        {adj?.plan_name ?? resolveCarrierName(carrierDirectory, adj?.carrier_id)}
                       </TableCell>
                       <TableCell className="text-sm">
                         {adj ? formatINR(adj.summary.total_billed_inr) : '—'}

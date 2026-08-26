@@ -27,7 +27,7 @@ import {
   type DenialIntelResult,
   type PreEncounterResult,
 } from '@/lib/api'
-import { getCarrierName } from '@/lib/carriers'
+import { resolveCarrierName, useCarrierDirectory } from '@/lib/carriers'
 import { cn, formatINRFull } from '@/lib/utils'
 
 interface ClaimDetailData {
@@ -46,6 +46,7 @@ async function safeFetch<T>(fn: () => Promise<T>): Promise<T | null> {
 }
 
 export function ClaimDetailClient({ claimId }: { claimId: string }) {
+  const carrierDirectory = useCarrierDirectory()
   const [data, setData] = React.useState<ClaimDetailData | null>(null)
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
@@ -220,7 +221,7 @@ export function ClaimDetailClient({ claimId }: { claimId: string }) {
               <StatBox label="Copay" value={formatINRFull(adjudication.summary.copay_amount_inr)} />
             </div>
             <p className="text-sm text-[#5C5C6B]">
-              {getCarrierName(adjudication.carrier_id)}
+              {resolveCarrierName(carrierDirectory, adjudication.carrier_id)}
               {adjudication.plan_name ? ` · ${adjudication.plan_name}` : ''}
             </p>
             <div className="overflow-x-auto rounded-lg border border-[#E4E4EF] bg-white">
