@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
@@ -85,8 +86,8 @@ function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
           open ? 'translate-x-0' : '-translate-x-full'
         )}
       >
-        <div className="flex h-14 items-center border-b border-[#E4E4EF] px-5">
-          <span className="text-lg font-bold text-[#1E6BFF]">ClearCycle</span>
+        <div className="flex items-center border-b border-[#E4E4EF] px-4 py-4">
+          <Image src="/logo.svg" alt="ClearCycle" width={160} height={40} priority />
         </div>
         <nav className="flex flex-1 flex-col gap-1 p-3">
           {NAV_ITEMS.map((item) => {
