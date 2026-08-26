@@ -14,14 +14,9 @@ import {
 } from '@/components/ui/select'
 import { ErrorState } from '@/components/api-states'
 import { LetterText } from '@/components/letter-text'
-import { api, type PreEncounterResult } from '@/lib/api'
+import { api, type Carrier, type PreEncounterResult } from '@/lib/api'
 import { useHospital } from '@/lib/hospital-context'
 import { cn } from '@/lib/utils'
-
-const CARRIERS = [
-  { id: 'STAR_HEALTH_001', label: 'Star Health Comprehensive' },
-  { id: 'NIVA_BUPA_001', label: 'Niva Bupa Health Premia Gold' },
-]
 
 function todayISO() {
   return new Date().toISOString().slice(0, 10)
@@ -30,7 +25,9 @@ function todayISO() {
 export default function PreEncounterPage() {
   const { hospitalId } = useHospital()
   const [patientId, setPatientId] = React.useState('')
-  const [carrierId, setCarrierId] = React.useState(CARRIERS[0].id)
+  const [carriers, setCarriers] = React.useState<Carrier[]>([])
+  const [carriersLoading, setCarriersLoading] = React.useState(false)
+  const [carrierId, setCarrierId] = React.useState('')
   const [admissionDate, setAdmissionDate] = React.useState(todayISO())
   const [diagnoses, setDiagnoses] = React.useState('')
   const [procedures, setProcedures] = React.useState('')
@@ -39,6 +36,29 @@ export default function PreEncounterPage() {
   const [submitting, setSubmitting] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
   const [result, setResult] = React.useState<PreEncounterResult | null>(null)
+
+  React.useEffect(() => {
+    let cancelled = false
+    setCarriersLoading(true)
+    api
+      .getCarriers()
+      .then((res) => {
+        if (cancelled) return
+        const list = Array.isArray(res) ? res : []
+        setCarriers(list)
+        const defaultCarrier = list.find((c) => c.is_default) ?? list[0]
+        if (defaultCarrier) setCarrierId(defaultCarrier.carrier_id)
+      })
+      .catch(() => {
+        if (!cancelled) setCarriers([])
+      })
+      .finally(() => {
+        if (!cancelled) setCarriersLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -83,16 +103,24 @@ export default function PreEncounterPage() {
               />
             </Field>
             <Field label="Carrier">
-              <Select value={carrierId} onValueChange={(v) => setCarrierId(v ?? CARRIERS[0].id)}>
+              <Select
+                value={carrierId}
+                onValueChange={(v) => setCarrierId(v ?? carriers[0]?.carrier_id ?? '')}
+                disabled={carriersLoading || carriers.length === 0}
+              >
                 <SelectTrigger className="w-full">
                   <SelectValue>
-                    {(value: string) => CARRIERS.find((c) => c.id === value)?.label ?? value}
+                    {(value: string) =>
+                      carriersLoading
+                        ? 'Loading carriers…'
+                        : carriers.find((c) => c.carrier_id === value)?.short_name ?? value
+                    }
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  {CARRIERS.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.label}
+                  {carriers.map((c) => (
+                    <SelectItem key={c.carrier_id} value={c.carrier_id}>
+                      {c.short_name}
                     </SelectItem>
                   ))}
                 </SelectContent>

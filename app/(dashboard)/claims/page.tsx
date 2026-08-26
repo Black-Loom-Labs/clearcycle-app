@@ -29,6 +29,7 @@ import { api, type Claim, type AdjudicationResult } from '@/lib/api'
 import { getCarrierName } from '@/lib/carriers'
 import { useHospital } from '@/lib/hospital-context'
 import { formatINR, formatRelativeTime } from '@/lib/utils'
+import { NewClaimDialog } from './new-claim-dialog'
 
 const PER_PAGE = 25
 // The API caps per_page at 100 — used when pulling the full set to search across.
@@ -186,6 +187,7 @@ export default function ClaimsPage() {
             </SelectContent>
           </Select>
         </div>
+        <NewClaimDialog onSubmitted={load} />
       </div>
 
       {error ? (

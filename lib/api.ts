@@ -21,6 +21,27 @@ async function apiFetch<T = unknown>(path: string, options?: RequestInit): Promi
   return res.json()
 }
 
+// Multipart requests must NOT set a Content-Type header — the browser needs
+// to add its own with the multipart boundary.
+async function apiFetchForm<T = unknown>(path: string, body: FormData): Promise<T> {
+  const res = await fetch(`${API_BASE}${path}`, { method: 'POST', body })
+  if (!res.ok) {
+    let detail = ''
+    try {
+      const json = await res.json()
+      detail = json?.detail ?? ''
+    } catch {
+      // ignore — no JSON body
+    }
+    throw new Error(detail || `API error ${res.status}`)
+  }
+  try {
+    return await res.json()
+  } catch {
+    return null as T
+  }
+}
+
 // ---- Response shapes (verified against the live API) ----
 
 export interface AgingBucket {
@@ -235,6 +256,22 @@ export interface PreEncounterResult {
   generated_at: string
 }
 
+export interface Carrier {
+  carrier_id: string
+  carrier_name: string
+  plan_name: string
+  display_label: string
+  short_name: string
+  is_default?: boolean
+  [key: string]: unknown
+}
+
+export interface IngestDocumentResponse {
+  claim_id?: string
+  status?: string
+  [key: string]: unknown
+}
+
 export const api = {
   getARDashboard: (hospitalId: string) =>
     apiFetch<ARDashboardResponse>(`/ar/dashboard?hospital_id=${hospitalId}`),
@@ -261,8 +298,26 @@ export const api = {
     }),
   getARCarriers: (hospitalId: string) =>
     apiFetch(`/ar/carriers?hospital_id=${hospitalId}`),
+  getCarriers: () => apiFetch<Carrier[]>('/carriers'),
   getARLeakage: (hospitalId: string) =>
     apiFetch(`/ar/leakage?hospital_id=${hospitalId}`),
   getARVelocity: (hospitalId: string) =>
     apiFetch(`/ar/velocity?hospital_id=${hospitalId}`),
+  ingestDocument: (fields: {
+    file: File
+    hospital_id: string
+    doc_type: string
+    carrier_id?: string
+    claim_id?: string
+    bill_file?: File
+  }) => {
+    const form = new FormData()
+    form.append('file', fields.file)
+    form.append('doc_type', fields.doc_type)
+    form.append('hospital_id', fields.hospital_id)
+    if (fields.carrier_id) form.append('carrier_id', fields.carrier_id)
+    if (fields.claim_id) form.append('claim_id', fields.claim_id)
+    if (fields.bill_file) form.append('bill_file', fields.bill_file)
+    return apiFetchForm<IngestDocumentResponse>('/ingest/document', form)
+  },
 }

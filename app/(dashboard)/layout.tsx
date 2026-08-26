@@ -25,6 +25,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu'
+import { ToastProvider } from '@/components/toast'
 import { HospitalProvider, useHospital } from '@/lib/hospital-context'
 import { DEV_MODE } from '@/lib/config'
 
@@ -187,7 +188,9 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <HospitalProvider>
-      <DashboardShell>{children}</DashboardShell>
+      <ToastProvider>
+        <DashboardShell>{children}</DashboardShell>
+      </ToastProvider>
     </HospitalProvider>
   )
 }
