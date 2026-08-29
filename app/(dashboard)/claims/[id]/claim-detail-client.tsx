@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Check, Copy, ShieldAlert } from 'lucide-react'
+import { ArrowLeft, Check, Copy, Download, ShieldAlert } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -27,6 +27,7 @@ import {
   type DenialIntelResult,
   type PreEncounterResult,
 } from '@/lib/api'
+import { apiFetch } from '@/lib/auth'
 import { resolveCarrierName, useCarrierDirectory } from '@/lib/carriers'
 import { cn, formatINRFull } from '@/lib/utils'
 
@@ -70,6 +71,14 @@ export function ClaimDetailClient({ claimId }: { claimId: string }) {
   React.useEffect(() => {
     load()
   }, [load])
+
+  const handleDownloadReport = async () => {
+    const res = await apiFetch(`/reports/${claimId}/download`)
+    const html = await res.text()
+    const blob = new Blob([html], { type: 'text/html' })
+    const url = URL.createObjectURL(blob)
+    window.open(url, '_blank')
+  }
 
   if (loading) return <DetailSkeleton />
   if (error) return <ErrorState message={error} onRetry={load} />
@@ -115,6 +124,10 @@ export function ClaimDetailClient({ claimId }: { claimId: string }) {
                   </span>
                 </span>
               )}
+              <Button size="sm" variant="outline" onClick={handleDownloadReport}>
+                <Download className="size-3.5" />
+                Download Report
+              </Button>
             </div>
           </div>
 
