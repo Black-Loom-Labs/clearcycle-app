@@ -2,8 +2,9 @@
 
 import * as React from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Check, Copy, Download, ShieldAlert } from 'lucide-react'
+import { ArrowLeft, AlertCircle, Check, Copy, Download, ShieldAlert } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
@@ -22,16 +23,21 @@ import { LetterText } from '@/components/letter-text'
 import { StatusBadge, winProbabilityColor, readinessColor } from '@/components/status-badge'
 import {
   api,
+  ApiError,
+  type Claim,
   type CodingResult,
   type AdjudicationResult,
   type DenialIntelResult,
   type PreEncounterResult,
+  type FinancialSplit,
+  type PayerPersonaScrubResult,
 } from '@/lib/api'
 import { apiFetch } from '@/lib/auth'
 import { resolveCarrierName, useCarrierDirectory } from '@/lib/carriers'
 import { cn, formatINRFull } from '@/lib/utils'
 
 interface ClaimDetailData {
+  claim: Claim | null
   coding: CodingResult | null
   adjudication: AdjudicationResult | null
   denialIntel: DenialIntelResult | null
@@ -56,13 +62,14 @@ export function ClaimDetailClient({ claimId }: { claimId: string }) {
     setLoading(true)
     setError(null)
     Promise.all([
+      safeFetch(() => api.getClaim(claimId)),
       safeFetch(() => api.getCodingResult(claimId)),
       safeFetch(() => api.getAdjudication(claimId)),
       safeFetch(() => api.getDenialIntel(claimId)),
       safeFetch(() => api.getPreEncounter(claimId)),
     ])
-      .then(([coding, adjudication, denialIntel, preEncounter]) => {
-        setData({ coding, adjudication, denialIntel, preEncounter })
+      .then(([claim, coding, adjudication, denialIntel, preEncounter]) => {
+        setData({ claim, coding, adjudication, denialIntel, preEncounter })
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false))
@@ -84,7 +91,11 @@ export function ClaimDetailClient({ claimId }: { claimId: string }) {
   if (error) return <ErrorState message={error} onRetry={load} />
   if (!data) return null
 
-  const { coding, adjudication, denialIntel, preEncounter } = data
+  const { claim, coding, adjudication, denialIntel, preEncounter } = data
+  const carrierId = claim?.payer_id ?? adjudication?.carrier_id ?? null
+  const icdCodes = coding?.result?.diagnoses?.map((d) => d.code) ?? []
+  const cptCodes = coding?.result?.procedures?.map((p) => p.code) ?? []
+  const showRiskCheck = claim?.status === 'ready' || claim?.status === 'submitted'
   const status = adjudication?.status ?? 'pending'
   const readiness = coding?.result?.overall_confidence
     ? Math.round(coding.result.overall_confidence * 100)
@@ -209,6 +220,19 @@ export function ClaimDetailClient({ claimId }: { claimId: string }) {
 
       <Separator />
 
+      {/* Pre-Submission Risk Check */}
+      {showRiskCheck && (
+        <>
+          <PayerPersonaRiskCard
+            claimId={claimId}
+            carrierId={carrierId}
+            icdCodes={icdCodes}
+            cptCodes={cptCodes}
+          />
+          <Separator />
+        </>
+      )}
+
       {/* Section 3: Adjudication */}
       <section className="flex flex-col gap-3">
         <div className="flex items-center gap-2">
@@ -274,6 +298,11 @@ export function ClaimDetailClient({ claimId }: { claimId: string }) {
           </div>
         )}
       </section>
+
+      <Separator />
+
+      {/* Pre-Discharge Collection */}
+      <FinancialSplitCard claimId={claimId} />
 
       <Separator />
 
@@ -435,6 +464,220 @@ function CodingTable({
         </TableBody>
       </Table>
     </div>
+  )
+}
+
+function PayerPersonaRiskCard({
+  claimId,
+  carrierId,
+  icdCodes,
+  cptCodes,
+}: {
+  claimId: string
+  carrierId: string | null
+  icdCodes: string[]
+  cptCodes: string[]
+}) {
+  const [result, setResult] = React.useState<PayerPersonaScrubResult | null>(null)
+  const [loading, setLoading] = React.useState(true)
+  const [error, setError] = React.useState<string | null>(null)
+
+  React.useEffect(() => {
+    if (!carrierId || (icdCodes.length === 0 && cptCodes.length === 0)) {
+      setLoading(false)
+      return
+    }
+    setLoading(true)
+    setError(null)
+    api
+      .scrubPayerPersona({ claim_id: claimId, carrier_id: carrierId, icd_codes: icdCodes, cpt_codes: cptCodes })
+      .then(setResult)
+      .catch((e) => setError(e.message))
+      .finally(() => setLoading(false))
+    // icdCodes/cptCodes are re-derived each render from stable data — compare by content, not identity.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [claimId, carrierId, icdCodes.join(','), cptCodes.join(',')])
+
+  return (
+    <section className="flex flex-col gap-3">
+      <h2 className="text-base font-semibold text-[#0A0A0F]">Pre-Submission Risk Check</h2>
+      {loading ? (
+        <Skeleton className="h-32 rounded-lg" />
+      ) : error ? (
+        <ErrorState message={error} />
+      ) : !result ? (
+        <p className="text-sm text-[#5C5C6B]">Not applicable</p>
+      ) : (
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-[#0A0A0F]">Pre-Submission Risk</span>
+            <span
+              className={cn(
+                'rounded-full px-2.5 py-1 text-sm font-bold',
+                result.overall_risk_score > 0.65
+                  ? 'bg-[#FEE2E2] text-[#DC2626]'
+                  : result.overall_risk_score >= 0.35
+                  ? 'bg-[#FEF3C7] text-[#D97706]'
+                  : 'bg-[#DCFCE7] text-[#16A34A]'
+              )}
+            >
+              {Math.round(result.overall_risk_score * 100)}%
+            </span>
+          </div>
+          {result.message && <p className="text-sm text-[#5C5C6B]">{result.message}</p>}
+          {result.persona_matches === 0 ? (
+            <div className="rounded-lg border border-[#E4E4EF] bg-[#F7F8FA] p-3 text-sm text-[#5C5C6B]">
+              No historical data for this carrier/code combination yet
+            </div>
+          ) : (
+            result.warnings?.length > 0 && (
+              <div className="flex flex-col gap-2">
+                {result.warnings.map((w, i) => (
+                  <div key={i} className="rounded-lg border border-[#E4E4EF] bg-white p-3">
+                    <div className="flex items-center gap-2">
+                      <Badge className={w.severity === 'high' ? 'bg-[#FEE2E2] text-[#DC2626]' : 'bg-[#FEF3C7] text-[#D97706]'}>
+                        {w.severity === 'high' ? 'HIGH' : 'MEDIUM'}
+                      </Badge>
+                      <span className="text-sm text-[#0A0A0F]">{w.message}</span>
+                    </div>
+                    <p className="mt-1 text-sm font-bold text-[#0A0A0F]">{w.action}</p>
+                    {w.required_docs?.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {w.required_docs.map((doc, j) => (
+                          <span
+                            key={j}
+                            className="rounded-full bg-[#E4E4EF] px-2 py-0.5 text-xs text-[#5C5C6B]"
+                          >
+                            {doc}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )
+          )}
+        </div>
+      )}
+    </section>
+  )
+}
+
+function FinancialSplitCard({ claimId }: { claimId: string }) {
+  const [split, setSplit] = React.useState<FinancialSplit | null>(null)
+  const [notFound, setNotFound] = React.useState(false)
+  const [loading, setLoading] = React.useState(true)
+  const [error, setError] = React.useState<string | null>(null)
+  const [copied, setCopied] = React.useState(false)
+
+  const load = React.useCallback(() => {
+    setLoading(true)
+    setNotFound(false)
+    setError(null)
+    api
+      .getClaimSplit(claimId)
+      .then(setSplit)
+      .catch((e) => {
+        if (e instanceof ApiError && e.status === 404) {
+          setNotFound(true)
+        } else {
+          setError(e.message)
+        }
+      })
+      .finally(() => setLoading(false))
+  }, [claimId])
+
+  React.useEffect(() => {
+    load()
+  }, [load])
+
+  function copyMessage() {
+    if (!split) return
+    navigator.clipboard.writeText(split.front_desk_message)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 1500)
+  }
+
+  return (
+    <section className="flex flex-col gap-3">
+      <h2 className="text-base font-semibold text-[#0A0A0F]">Pre-Discharge Collection</h2>
+      {loading ? (
+        <Skeleton className="h-48 rounded-lg" />
+      ) : notFound ? (
+        <p className="text-sm text-[#5C5C6B]">Financial split not available — run adjudication first</p>
+      ) : error ? (
+        <ErrorState message={error} onRetry={load} />
+      ) : !split ? null : (
+        <div className="flex flex-col gap-4">
+          {split.requires_manager_review && (
+            <Alert variant="destructive">
+              <AlertCircle />
+              <AlertTitle>Manager review required</AlertTitle>
+              <AlertDescription>Patient liability exceeds 20% of total bill</AlertDescription>
+            </Alert>
+          )}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <StatBox label="Total Billed" value={formatINRFull(split.total_billed_inr)} />
+            <StatBox
+              label="Insurer Pays"
+              value={formatINRFull(split.insurer_pays_inr)}
+              valueClass="text-[#16A34A]"
+            />
+            <StatBox
+              label="Collect from Patient"
+              value={formatINRFull(split.patient_pays_inr)}
+              valueClass={
+                split.requires_manager_review
+                  ? 'text-[#DC2626]'
+                  : split.patient_pays_inr > 0
+                  ? 'text-[#D97706]'
+                  : undefined
+              }
+            />
+          </div>
+          {split.deduction_breakdown?.length > 0 && (
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {split.deduction_breakdown.map((d, i) => (
+                <Card
+                  key={i}
+                  className={cn(
+                    'border-[#E4E4EF] border-l-4',
+                    d.collectable_from_patient ? 'border-l-[#16A34A]' : 'border-l-[#E4E4EF]'
+                  )}
+                >
+                  <CardContent className="flex flex-col gap-1 py-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-[#0A0A0F]">{d.category}</span>
+                      <span className="text-sm font-semibold text-[#0A0A0F]">
+                        {formatINRFull(d.amount_inr)}
+                      </span>
+                    </div>
+                    <span className="text-xs text-[#5C5C6B]">{d.reason}</span>
+                    {d.items?.length > 0 && (
+                      <ul className="mt-1 list-disc pl-4 text-xs text-[#5C5C6B]">
+                        {d.items.map((item, j) => (
+                          <li key={j}>{item}</li>
+                        ))}
+                      </ul>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+          {split.front_desk_message && (
+            <div className="flex items-start justify-between gap-3 rounded-lg border border-[#BFDBFE] bg-[#EFF6FF] p-3">
+              <p className="text-sm text-[#1E40AF]">{split.front_desk_message}</p>
+              <Button size="sm" variant="outline" onClick={copyMessage}>
+                {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
+                {copied ? 'Copied' : 'Copy'}
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+    </section>
   )
 }
 

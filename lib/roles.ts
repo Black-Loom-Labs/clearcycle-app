@@ -9,6 +9,7 @@ const ROUTE_ROLES: Record<string, Role[]> = {
   '/claims': ['read_only', 'billing_staff', 'admin'],
   '/pre-encounter': ['billing_staff', 'admin'],
   '/denial-intel': ['billing_staff', 'admin'],
+  '/payer-intelligence': ['billing_staff', 'admin'],
   '/settings': ['admin'],
 }
 

@@ -1,5 +1,17 @@
 import { apiFetch as authFetch } from './auth'
 
+// Thrown by apiFetch on any non-OK response. Extends Error so existing
+// `.message`-only callers are unaffected; new callers can check `.status`
+// (e.g. to special-case a 404 as "not computed yet" rather than a failure).
+export class ApiError extends Error {
+  status: number
+  constructor(message: string, status: number) {
+    super(message)
+    this.name = 'ApiError'
+    this.status = status
+  }
+}
+
 async function apiFetch<T = unknown>(path: string, options?: RequestInit): Promise<T> {
   const res = await authFetch(path, options)
   if (!res.ok) {
@@ -10,7 +22,7 @@ async function apiFetch<T = unknown>(path: string, options?: RequestInit): Promi
     } catch {
       // ignore — no JSON body
     }
-    throw new Error(detail || `API error ${res.status}`)
+    throw new ApiError(detail || `API error ${res.status}`, res.status)
   }
   return res.json()
 }
@@ -131,6 +143,8 @@ export interface Claim {
   created_at: string
   updated_at: string
   pipeline_stages: Record<string, PipelineStageStatus>
+  // Not present in every API response — only used opportunistically for display.
+  patient_name?: string
 }
 
 export interface ClaimsListResponse {
@@ -267,6 +281,57 @@ export interface IngestDocumentResponse {
   [key: string]: unknown
 }
 
+export interface FinancialSplitDeduction {
+  category: string
+  amount_inr: number
+  items: string[]
+  collectable_from_patient: boolean
+  reason: string
+}
+
+export interface FinancialSplit {
+  total_billed_inr: number
+  insurer_pays_inr: number
+  patient_pays_inr: number
+  copay_inr: number
+  patient_liability_pct: number
+  requires_manager_review: boolean
+  front_desk_message: string
+  deduction_breakdown: FinancialSplitDeduction[]
+}
+
+export interface PayerPersonaWarning {
+  severity: 'high' | 'medium' | string
+  code: string
+  message: string
+  action: string
+  required_docs: string[]
+}
+
+export interface PayerPersonaScrubResult {
+  overall_risk_score: number
+  persona_matches: number
+  message: string
+  warnings: PayerPersonaWarning[]
+}
+
+export interface PayerPersonaCommonReason {
+  reason: string
+  frequency: number
+}
+
+export interface PayerPersonaProfile {
+  carrier_id: string
+  icd_codes: string[]
+  cpt_codes: string[]
+  rejection_rate: number
+  sample_size: number
+  top_rejection_reason: string
+  required_docs: string[]
+  common_reasons: PayerPersonaCommonReason[]
+  [key: string]: unknown
+}
+
 export const api = {
   getARDashboard: (hospitalId: string) =>
     apiFetch<ARDashboardResponse>(`/ar/dashboard?hospital_id=${hospitalId}`),
@@ -315,4 +380,22 @@ export const api = {
     if (fields.bill_file) form.append('bill_file', fields.bill_file)
     return apiFetchForm<IngestDocumentResponse>('/ingest/document', form)
   },
+  getClaim: (claimId: string) => apiFetch<Claim>(`/claims/${claimId}`),
+  getClaimSplit: (claimId: string) => apiFetch<FinancialSplit>(`/claims/${claimId}/split`),
+  scrubPayerPersona: (body: {
+    claim_id: string
+    carrier_id: string
+    icd_codes: string[]
+    cpt_codes: string[]
+  }) =>
+    apiFetch<PayerPersonaScrubResult>('/payer-persona/scrub', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  getPayerPersonaProfiles: (carrierId?: string) =>
+    apiFetch<{ profiles: PayerPersonaProfile[]; total: number }>(
+      `/payer-persona/profiles${carrierId ? `?carrier_id=${carrierId}` : ''}`
+    ),
+  rebuildPayerPersonaProfiles: () =>
+    apiFetch<{ status?: string }>('/payer-persona/rebuild', { method: 'POST' }),
 }

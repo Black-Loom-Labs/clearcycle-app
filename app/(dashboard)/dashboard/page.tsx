@@ -12,13 +12,15 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
+import Link from 'next/link'
 import { TrendingDown, Zap } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ErrorState, EmptyState } from '@/components/api-states'
 import { collectionRateColor } from '@/components/status-badge'
-import { api, type ARDashboardResponse } from '@/lib/api'
-import { resolveCarrierShortName, useCarrierDirectory } from '@/lib/carriers'
+import { api, type ARDashboardResponse, type Claim, type FinancialSplit } from '@/lib/api'
+import { resolveCarrierName, resolveCarrierShortName, useCarrierDirectory } from '@/lib/carriers'
 import { useHospital } from '@/lib/hospital-context'
 import { formatINR, formatINRFull } from '@/lib/utils'
 
@@ -165,6 +167,8 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-6">
+      <ManagerReviewWidget />
+
       {/* Top stat cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Total Claims" value={summary.total_claims?.toLocaleString('en-IN') ?? '0'} />
@@ -333,6 +337,84 @@ export default function DashboardPage() {
         </Card>
       </div>
     </div>
+  )
+}
+
+function ManagerReviewWidget() {
+  const { hospitalId } = useHospital()
+  const carrierDirectory = useCarrierDirectory()
+  const [flagged, setFlagged] = React.useState<{ claim: Claim; split: FinancialSplit }[]>([])
+  const [loading, setLoading] = React.useState(true)
+
+  React.useEffect(() => {
+    let cancelled = false
+    setLoading(true)
+    api
+      .getClaims(hospitalId, { status: 'ready', per_page: '50' })
+      .then(async (res) => {
+        const readyClaims = res.claims ?? []
+        const results = await Promise.allSettled(
+          readyClaims.map((c) => api.getClaimSplit(c.id).then((s) => ({ claim: c, split: s })))
+        )
+        if (cancelled) return
+        const matches = results
+          .filter(
+            (r): r is PromiseFulfilledResult<{ claim: Claim; split: FinancialSplit }> =>
+              r.status === 'fulfilled' && r.value.split.requires_manager_review
+          )
+          .map((r) => r.value)
+        setFlagged(matches)
+      })
+      .catch(() => setFlagged([]))
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [hospitalId])
+
+  if (loading || flagged.length === 0) return null
+
+  const shown = flagged.slice(0, 5)
+
+  return (
+    <Card className="border-2 border-[#DC2626]">
+      <CardHeader>
+        <CardTitle className="text-sm font-semibold text-[#DC2626]">
+          ⚠️ {flagged.length} claim(s) require manager review before discharge
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="flex flex-col divide-y divide-[#E4E4EF] py-0">
+        {shown.map(({ claim, split }) => (
+          <div key={claim.id} className="flex items-center justify-between py-2.5">
+            <div className="flex flex-col">
+              <span className="text-sm font-medium text-[#0A0A0F]">
+                {claim.patient_name || `${claim.id.slice(0, 8)}…`}
+              </span>
+              <span className="text-xs text-[#5C5C6B]">
+                {resolveCarrierName(carrierDirectory, claim.payer_id)}
+              </span>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-semibold text-[#DC2626]">
+                {formatINR(split.patient_pays_inr)}
+              </span>
+              <Button size="sm" variant="outline" nativeButton={false} render={<Link href={`/claims/${claim.id}`} />}>
+                View Claim
+              </Button>
+            </div>
+          </div>
+        ))}
+        {flagged.length > 5 && (
+          <div className="py-2.5">
+            <Link href="/claims?status=ready" className="text-sm text-[#1E6BFF] hover:underline">
+              View all
+            </Link>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   )
 }
 

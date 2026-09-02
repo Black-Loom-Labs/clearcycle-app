@@ -25,7 +25,7 @@ import { ErrorState } from '@/components/api-states'
 import { CopyableId } from '@/components/copyable-id'
 import { PaginationFooter } from '@/components/pagination-footer'
 import { StatusBadge, readinessColor } from '@/components/status-badge'
-import { api, type Claim, type AdjudicationResult } from '@/lib/api'
+import { api, type Claim, type AdjudicationResult, type FinancialSplit } from '@/lib/api'
 import { resolveCarrierName, useCarrierDirectory } from '@/lib/carriers'
 import { useHospital } from '@/lib/hospital-context'
 import { formatINR, formatRelativeTime } from '@/lib/utils'
@@ -67,6 +67,7 @@ export default function ClaimsPage() {
   const [allClaims, setAllClaims] = React.useState<Claim[] | null>(null)
 
   const [adjudications, setAdjudications] = React.useState<Record<string, AdjudicationResult | null>>({})
+  const [splits, setSplits] = React.useState<Record<string, FinancialSplit | null>>({})
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
   const [status, setStatus] = React.useState('all')
@@ -110,6 +111,7 @@ export default function ClaimsPage() {
     setLoading(true)
     setError(null)
     setAdjudications({})
+    setSplits({})
 
     if (isSearching) {
       fetchAllClaims()
@@ -154,6 +156,26 @@ export default function ClaimsPage() {
         .getAdjudication(claim.id)
         .then((adj) => setAdjudications((prev) => ({ ...prev, [claim.id]: adj })))
         .catch(() => setAdjudications((prev) => ({ ...prev, [claim.id]: null })))
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [displayed])
+
+  // Fetch patient-liability splits for the currently displayed claims — but
+  // only for statuses where a split is meaningful, and capped at 10 per
+  // batch to avoid hammering the API.
+  React.useEffect(() => {
+    const eligible = displayed
+      .filter((c) => ['ready', 'submitted', 'paid'].includes(c.status) && !(c.id in splits))
+      .slice(0, 10)
+    if (eligible.length === 0) return
+    Promise.allSettled(eligible.map((c) => api.getClaimSplit(c.id))).then((results) => {
+      setSplits((prev) => {
+        const next = { ...prev }
+        results.forEach((r, i) => {
+          next[eligible[i].id] = r.status === 'fulfilled' ? r.value : null
+        })
+        return next
+      })
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [displayed])
@@ -210,6 +232,7 @@ export default function ClaimsPage() {
               <TableRow>
                 <TableHead>Claim ID</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Patient Due</TableHead>
                 <TableHead>Readiness</TableHead>
                 <TableHead>Carrier</TableHead>
                 <TableHead>Total Billed</TableHead>
@@ -222,7 +245,7 @@ export default function ClaimsPage() {
               {loading &&
                 Array.from({ length: 8 }).map((_, i) => (
                   <TableRow key={i}>
-                    {Array.from({ length: 8 }).map((_, j) => (
+                    {Array.from({ length: 9 }).map((_, j) => (
                       <TableCell key={j}>
                         <Skeleton className="h-4 w-full" />
                       </TableCell>
@@ -231,7 +254,7 @@ export default function ClaimsPage() {
                 ))}
               {!loading && displayed.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={8}>
+                  <TableCell colSpan={9}>
                     <div className="flex flex-col items-center gap-2 py-12 text-center">
                       <FileText className="size-8 text-[#5C5C6B]" />
                       <p className="text-sm text-[#5C5C6B]">No claims found</p>
@@ -253,6 +276,26 @@ export default function ClaimsPage() {
                       </TableCell>
                       <TableCell>
                         <StatusBadge status={claim.status} />
+                      </TableCell>
+                      <TableCell>
+                        {(() => {
+                          const split = splits[claim.id]
+                          if (!split || split.patient_pays_inr <= 0) {
+                            return <span className="text-sm text-[#5C5C6B]">—</span>
+                          }
+                          if (split.requires_manager_review) {
+                            return (
+                              <span className="text-sm font-semibold text-[#DC2626]">
+                                ⚠️ {formatINR(split.patient_pays_inr)}
+                              </span>
+                            )
+                          }
+                          return (
+                            <span className="text-sm font-semibold text-[#D97706]">
+                              {formatINR(split.patient_pays_inr)}
+                            </span>
+                          )
+                        })()}
                       </TableCell>
                       <TableCell>
                         <span className={`font-semibold ${readinessColor(claim.readiness_score ?? 0)}`}>

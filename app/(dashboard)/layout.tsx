@@ -9,6 +9,7 @@ import {
   FileText,
   UserCheck,
   AlertTriangle,
+  BarChart2,
   Settings,
   Bell,
   Menu,
@@ -36,6 +37,7 @@ const NAV_ITEMS = [
   { href: '/claims', label: 'Claims', icon: FileText },
   { href: '/pre-encounter', label: 'Pre-Encounter', icon: UserCheck },
   { href: '/denial-intel', label: 'Denial Intel', icon: AlertTriangle },
+  { href: '/payer-intelligence', label: 'Payer Intelligence', icon: BarChart2 },
   { href: '/settings', label: 'Settings', icon: Settings },
 ]
 
