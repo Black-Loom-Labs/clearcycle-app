@@ -2,12 +2,28 @@
 
 import * as React from 'react'
 import Link from 'next/link'
-import { ArrowLeft, AlertCircle, Check, Copy, Download, ShieldAlert } from 'lucide-react'
+import { ArrowLeft, AlertCircle, Check, Copy, Download, RefreshCw, ShieldAlert } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import {
   Table,
   TableBody,
@@ -20,10 +36,10 @@ import { Card, CardContent } from '@/components/ui/card'
 import { ErrorState } from '@/components/api-states'
 import { CopyableId } from '@/components/copyable-id'
 import { LetterText } from '@/components/letter-text'
+import { useToast } from '@/components/toast'
 import { StatusBadge, winProbabilityColor, readinessColor } from '@/components/status-badge'
 import {
   api,
-  ApiError,
   type Claim,
   type CodingResult,
   type AdjudicationResult,
@@ -34,7 +50,15 @@ import {
 } from '@/lib/api'
 import { apiFetch } from '@/lib/auth'
 import { resolveCarrierName, useCarrierDirectory } from '@/lib/carriers'
+import { getCurrentRole } from '@/lib/roles'
 import { cn, formatINRFull } from '@/lib/utils'
+
+const STATUS_TRANSITIONS: Record<string, string[]> = {
+  ready: ['submitted'],
+  submitted: ['paid', 'denied'],
+  denied: ['appealed'],
+  appealed: ['paid', 'denied'],
+}
 
 interface ClaimDetailData {
   claim: Claim | null
@@ -57,6 +81,9 @@ export function ClaimDetailClient({ claimId }: { claimId: string }) {
   const [data, setData] = React.useState<ClaimDetailData | null>(null)
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
+  const [statusDialogOpen, setStatusDialogOpen] = React.useState(false)
+  const role = React.useMemo(() => getCurrentRole(), [])
+  const canUpdateStatus = role === 'admin' || role === 'billing_staff'
 
   const load = React.useCallback(() => {
     setLoading(true)
@@ -139,6 +166,12 @@ export function ClaimDetailClient({ claimId }: { claimId: string }) {
                 <Download className="size-3.5" />
                 Download Report
               </Button>
+              {canUpdateStatus && (
+                <Button size="sm" variant="outline" onClick={() => setStatusDialogOpen(true)}>
+                  <RefreshCw className="size-3.5" />
+                  Update Status
+                </Button>
+              )}
             </div>
           </div>
 
@@ -172,6 +205,16 @@ export function ClaimDetailClient({ claimId }: { claimId: string }) {
           </div>
         </CardContent>
       </Card>
+
+      {canUpdateStatus && (
+        <UpdateStatusDialog
+          claimId={claimId}
+          currentStatus={claim?.status ?? status}
+          open={statusDialogOpen}
+          onOpenChange={setStatusDialogOpen}
+          onUpdated={load}
+        />
+      )}
 
       <Separator />
 
@@ -467,6 +510,116 @@ function CodingTable({
   )
 }
 
+function UpdateStatusDialog({
+  claimId,
+  currentStatus,
+  open,
+  onOpenChange,
+  onUpdated,
+}: {
+  claimId: string
+  currentStatus: string
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  onUpdated: () => void
+}) {
+  const { showToast } = useToast()
+  const allowedStatuses = STATUS_TRANSITIONS[currentStatus] ?? []
+  const [nextStatus, setNextStatus] = React.useState(allowedStatuses[0] ?? '')
+  const [notes, setNotes] = React.useState('')
+  const [submitting, setSubmitting] = React.useState(false)
+  const [error, setError] = React.useState<string | null>(null)
+
+  React.useEffect(() => {
+    if (open) {
+      setNextStatus((STATUS_TRANSITIONS[currentStatus] ?? [])[0] ?? '')
+      setNotes('')
+      setError(null)
+    }
+    // Only reset when the dialog opens — currentStatus/allowedStatuses are re-derived each render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, currentStatus])
+
+  function handleOpenChange(next: boolean) {
+    if (!submitting) onOpenChange(next)
+  }
+
+  async function handleConfirm() {
+    if (!nextStatus) return
+    setSubmitting(true)
+    setError(null)
+    try {
+      await api.updateClaimStatus(claimId, { status: nextStatus, notes: notes.trim() || undefined })
+      onOpenChange(false)
+      showToast(`Claim status updated to ${nextStatus}`)
+      onUpdated()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to update claim status')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Update Status</DialogTitle>
+          <DialogDescription>
+            Current status: <span className="font-semibold text-[#0A0A0F]">{currentStatus}</span>
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex flex-col gap-4">
+          {allowedStatuses.length === 0 ? (
+            <p className="text-sm text-[#5C5C6B]">No status transitions available from this status.</p>
+          ) : (
+            <>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-[#0A0A0F]">New Status</label>
+                <Select value={nextStatus} onValueChange={(v) => setNextStatus(v ?? '')}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue>{(value: string) => value}</SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {allowedStatuses.map((s) => (
+                      <SelectItem key={s} value={s}>
+                        {s}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-[#0A0A0F]">Notes</label>
+                <Input
+                  placeholder="e.g. Submitted to Star Health portal at 2pm"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                />
+              </div>
+            </>
+          )}
+
+          {error && <ErrorState message={error} />}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => handleOpenChange(false)} disabled={submitting}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleConfirm}
+              disabled={submitting || !nextStatus}
+              className="bg-[#1E6BFF] hover:bg-[#1E6BFF]/90"
+            >
+              {submitting ? 'Updating...' : 'Confirm'}
+            </Button>
+          </DialogFooter>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 function PayerPersonaRiskCard({
   claimId,
   carrierId,
@@ -568,22 +721,20 @@ function FinancialSplitCard({ claimId }: { claimId: string }) {
   const [split, setSplit] = React.useState<FinancialSplit | null>(null)
   const [notFound, setNotFound] = React.useState(false)
   const [loading, setLoading] = React.useState(true)
-  const [error, setError] = React.useState<string | null>(null)
   const [copied, setCopied] = React.useState(false)
 
   const load = React.useCallback(() => {
     setLoading(true)
     setNotFound(false)
-    setError(null)
     api
       .getClaimSplit(claimId)
       .then(setSplit)
-      .catch((e) => {
-        if (e instanceof ApiError && e.status === 404) {
-          setNotFound(true)
-        } else {
-          setError(e.message)
-        }
+      .catch(() => {
+        // Any non-200 response (404 — split not computed yet, 500 — backend
+        // compute failure, or anything else) just means there's no split
+        // data to show yet. Degrade to the "not available" state rather
+        // than surfacing a generic error.
+        setNotFound(true)
       })
       .finally(() => setLoading(false))
   }, [claimId])
@@ -606,8 +757,6 @@ function FinancialSplitCard({ claimId }: { claimId: string }) {
         <Skeleton className="h-48 rounded-lg" />
       ) : notFound ? (
         <p className="text-sm text-[#5C5C6B]">Financial split not available — run adjudication first</p>
-      ) : error ? (
-        <ErrorState message={error} onRetry={load} />
       ) : !split ? null : (
         <div className="flex flex-col gap-4">
           {split.requires_manager_review && (

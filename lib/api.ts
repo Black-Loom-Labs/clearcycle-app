@@ -147,6 +147,12 @@ export interface Claim {
   patient_name?: string
 }
 
+export interface ClaimStatusUpdate {
+  claim_id: string
+  status: string
+  updated_at: string
+}
+
 export interface ClaimsListResponse {
   claims: Claim[]
   total: number
@@ -382,6 +388,11 @@ export const api = {
   },
   getClaim: (claimId: string) => apiFetch<Claim>(`/claims/${claimId}`),
   getClaimSplit: (claimId: string) => apiFetch<FinancialSplit>(`/claims/${claimId}/split`),
+  updateClaimStatus: (claimId: string, body: { status: string; notes?: string }) =>
+    apiFetch<ClaimStatusUpdate>(`/claims/${claimId}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    }),
   scrubPayerPersona: (body: {
     claim_id: string
     carrier_id: string
