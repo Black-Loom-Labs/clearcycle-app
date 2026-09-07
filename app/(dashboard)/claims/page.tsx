@@ -172,6 +172,10 @@ export default function ClaimsPage() {
       setSplits((prev) => {
         const next = { ...prev }
         results.forEach((r, i) => {
+          // A 404 (split not computed yet) or a 500 (compute failure on the
+          // backend) both just mean "no split data available" — fall back to
+          // the placeholder dash in the Patient Due column instead of
+          // crashing or surfacing an error for that row.
           next[eligible[i].id] = r.status === 'fulfilled' ? r.value : null
         })
         return next
