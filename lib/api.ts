@@ -58,7 +58,6 @@ export interface AgingBucket {
 
 export interface CarrierBreakdown {
   carrier_id: string
-  plan_name: string
   claims: number
   total_billed_inr: number
   total_approved_inr: number
