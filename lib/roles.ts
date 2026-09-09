@@ -10,7 +10,9 @@ const ROUTE_ROLES: Record<string, Role[]> = {
   '/pre-encounter': ['billing_staff', 'admin'],
   '/denial-intel': ['billing_staff', 'admin'],
   '/payer-intelligence': ['billing_staff', 'admin'],
-  '/settings': ['admin'],
+  // Billing staff can view the Doctors directory tab and add new doctors —
+  // editing/disabling a doctor stays admin-only (see canManageDoctors).
+  '/settings': ['billing_staff', 'admin'],
 }
 
 export function getCurrentRole(): Role {
@@ -32,4 +34,14 @@ export function canAccessRoute(role: Role, pathname: string): boolean {
 
 export function canUpload(role: Role): boolean {
   return role === 'billing_staff' || role === 'admin'
+}
+
+// Doctors directory: billing staff can view and add new doctors; editing or
+// disabling an existing doctor is admin-only.
+export function canAddDoctors(role: Role): boolean {
+  return role === 'billing_staff' || role === 'admin'
+}
+
+export function canManageDoctors(role: Role): boolean {
+  return role === 'admin'
 }

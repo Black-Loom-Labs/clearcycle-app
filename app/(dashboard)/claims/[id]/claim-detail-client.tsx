@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import Link from 'next/link'
-import { ArrowLeft, AlertCircle, Check, Copy, Download, RefreshCw, ShieldAlert } from 'lucide-react'
+import { ArrowLeft, AlertCircle, Check, Copy, Download, RefreshCw, ShieldAlert, Stethoscope, Search } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Separator } from '@/components/ui/separator'
@@ -47,6 +47,7 @@ import {
   type PreEncounterResult,
   type FinancialSplit,
   type PayerPersonaScrubResult,
+  type Doctor,
 } from '@/lib/api'
 import { apiFetch } from '@/lib/auth'
 import { resolveCarrierName, useCarrierDirectory } from '@/lib/carriers'
@@ -82,8 +83,10 @@ export function ClaimDetailClient({ claimId }: { claimId: string }) {
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
   const [statusDialogOpen, setStatusDialogOpen] = React.useState(false)
+  const [initiateDialogOpen, setInitiateDialogOpen] = React.useState(false)
   const role = React.useMemo(() => getCurrentRole(), [])
   const canUpdateStatus = role === 'admin' || role === 'billing_staff'
+  const canInitiateApproval = role === 'admin' || role === 'billing_staff'
 
   const load = React.useCallback(() => {
     setLoading(true)
@@ -172,6 +175,12 @@ export function ClaimDetailClient({ claimId }: { claimId: string }) {
                   Update Status
                 </Button>
               )}
+              {canInitiateApproval && claim?.status === 'ready' && (
+                <Button size="sm" variant="outline" onClick={() => setInitiateDialogOpen(true)}>
+                  <Stethoscope className="size-3.5" />
+                  Initiate Approval
+                </Button>
+              )}
             </div>
           </div>
 
@@ -213,6 +222,16 @@ export function ClaimDetailClient({ claimId }: { claimId: string }) {
           open={statusDialogOpen}
           onOpenChange={setStatusDialogOpen}
           onUpdated={load}
+        />
+      )}
+
+      {canInitiateApproval && (
+        <InitiateApprovalDialog
+          claimId={claimId}
+          treatingDoctorName={claim?.treating_doctor_name}
+          open={initiateDialogOpen}
+          onOpenChange={setInitiateDialogOpen}
+          onInitiated={load}
         />
       )}
 
@@ -612,6 +631,282 @@ function UpdateStatusDialog({
               className="bg-[#1E6BFF] hover:bg-[#1E6BFF]/90"
             >
               {submitting ? 'Updating...' : 'Confirm'}
+            </Button>
+          </DialogFooter>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function InitiateApprovalDialog({
+  claimId,
+  treatingDoctorName,
+  open,
+  onOpenChange,
+  onInitiated,
+}: {
+  claimId: string
+  treatingDoctorName?: string
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  onInitiated: () => void
+}) {
+  const { showToast } = useToast()
+  const autoPopulated = !!treatingDoctorName
+
+  const [query, setQuery] = React.useState('')
+  const [results, setResults] = React.useState<Doctor[]>([])
+  const [searching, setSearching] = React.useState(false)
+  const [searched, setSearched] = React.useState(false)
+  const [selectedDoctor, setSelectedDoctor] = React.useState<Doctor | null>(null)
+  const [showAddNew, setShowAddNew] = React.useState(false)
+
+  const [name, setName] = React.useState('')
+  const [phone, setPhone] = React.useState('')
+  const [speciality, setSpeciality] = React.useState('')
+  const [saveToDirectory, setSaveToDirectory] = React.useState(true)
+
+  const [notes, setNotes] = React.useState('')
+  const [submitting, setSubmitting] = React.useState(false)
+  const [error, setError] = React.useState<string | null>(null)
+
+  React.useEffect(() => {
+    if (open) {
+      setQuery(treatingDoctorName ?? '')
+      setResults([])
+      setSearching(false)
+      setSearched(false)
+      setSelectedDoctor(null)
+      setShowAddNew(false)
+      setName(treatingDoctorName ?? '')
+      setPhone('')
+      setSpeciality('')
+      setSaveToDirectory(true)
+      setNotes('')
+      setError(null)
+    }
+  }, [open, treatingDoctorName])
+
+  // Debounced directory search as the doctor name is typed/edited.
+  React.useEffect(() => {
+    if (!open || selectedDoctor) return
+    const term = query.trim()
+    if (term.length < 2) {
+      setResults([])
+      setSearched(false)
+      return
+    }
+    setSearching(true)
+    const handle = setTimeout(() => {
+      api
+        .getDoctors(term)
+        .then((res) => {
+          const list = res.doctors ?? []
+          setResults(list)
+          setSearched(true)
+          // Nothing matched — go straight to the add-new-doctor form.
+          if (list.length === 0) setShowAddNew(true)
+        })
+        .catch(() => {
+          setResults([])
+          setSearched(true)
+        })
+        .finally(() => setSearching(false))
+    }, 300)
+    return () => clearTimeout(handle)
+  }, [query, open, selectedDoctor])
+
+  function selectDoctor(doctor: Doctor) {
+    setSelectedDoctor(doctor)
+    setQuery(doctor.name)
+    setPhone(doctor.phone)
+    setName(doctor.name)
+    setSpeciality(doctor.speciality ?? '')
+    setResults([])
+    setShowAddNew(false)
+  }
+
+  function clearSelection() {
+    setSelectedDoctor(null)
+    setResults([])
+    setSearched(false)
+  }
+
+  function handleOpenChange(next: boolean) {
+    if (!submitting) onOpenChange(next)
+  }
+
+  const canSubmit = selectedDoctor
+    ? true
+    : name.trim().length > 0 && phone.trim().length > 0
+
+  async function handleSubmit() {
+    if (!canSubmit) return
+    setSubmitting(true)
+    setError(null)
+    try {
+      const doctorName = selectedDoctor ? selectedDoctor.name : name.trim()
+      await api.initiateWorkflow({
+        claim_id: claimId,
+        ...(selectedDoctor
+          ? { doctor_id: selectedDoctor.id }
+          : {
+              doctor_name: name.trim(),
+              doctor_phone: phone.trim(),
+              doctor_speciality: speciality.trim() || undefined,
+              save_doctor_to_directory: saveToDirectory,
+            }),
+        notes: notes.trim() || undefined,
+      })
+      onOpenChange(false)
+      showToast(`Approval workflow initiated. OTP sent to Dr. ${doctorName}.`)
+      onInitiated()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to initiate approval workflow')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Initiate Approval</DialogTitle>
+          <DialogDescription>
+            Send an OTP-verified approval request to the treating doctor.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex flex-col gap-4">
+          {/* Treating Doctor */}
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium text-[#0A0A0F]">Treating Doctor</label>
+              {autoPopulated && !selectedDoctor && (
+                <Badge className="bg-[#EAFBF0] text-[#16A34A]">
+                  ✓ Auto-populated from discharge summary
+                </Badge>
+              )}
+            </div>
+
+            {selectedDoctor ? (
+              <div className="flex items-center justify-between rounded-lg border border-[#E4E4EF] bg-[#F7F8FA] px-3 py-2">
+                <div>
+                  <p className="text-sm font-medium text-[#0A0A0F]">{selectedDoctor.name}</p>
+                  <p className="text-xs text-[#5C5C6B]">
+                    {selectedDoctor.phone}
+                    {selectedDoctor.speciality ? ` · ${selectedDoctor.speciality}` : ''}
+                  </p>
+                </div>
+                <Button size="sm" variant="outline" onClick={clearSelection}>
+                  Change
+                </Button>
+              </div>
+            ) : (
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#5C5C6B]" />
+                <Input
+                  className="pl-9"
+                  placeholder="Search doctors by name"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                />
+                {searching && (
+                  <p className="mt-1 text-xs text-[#5C5C6B]">Searching directory…</p>
+                )}
+                {!searching && results.length > 0 && (
+                  <div className="mt-1 flex flex-col gap-1 rounded-lg border border-[#E4E4EF] bg-white p-1 shadow-sm">
+                    {results.map((doctor) => (
+                      <button
+                        key={doctor.id}
+                        type="button"
+                        onClick={() => selectDoctor(doctor)}
+                        className="flex flex-col items-start rounded-md px-2.5 py-2 text-left hover:bg-[#F7F8FA]"
+                      >
+                        <span className="text-sm font-medium text-[#0A0A0F]">{doctor.name}</span>
+                        <span className="text-xs text-[#5C5C6B]">
+                          {doctor.phone}
+                          {doctor.speciality ? ` · ${doctor.speciality}` : ''}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {!searching && searched && results.length === 0 && !showAddNew && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAddNew(true)}
+                    className="mt-1 text-sm text-[#1E6BFF] hover:underline"
+                  >
+                    + Add new doctor
+                  </button>
+                )}
+              </div>
+            )}
+
+            {!selectedDoctor && showAddNew && (
+              <div className="flex flex-col gap-3 rounded-lg border border-[#E4E4EF] bg-[#F7F8FA] p-3">
+                <p className="text-sm font-medium text-[#0A0A0F]">Add new doctor</p>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-sm font-medium text-[#0A0A0F]">
+                    Name<span className="text-[#DC2626]"> *</span>
+                  </label>
+                  <Input value={name} onChange={(e) => setName(e.target.value)} required />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-sm font-medium text-[#0A0A0F]">
+                    Phone<span className="text-[#DC2626]"> *</span>
+                  </label>
+                  <Input
+                    type="tel"
+                    placeholder="10-digit mobile number"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-sm font-medium text-[#0A0A0F]">Speciality</label>
+                  <Input value={speciality} onChange={(e) => setSpeciality(e.target.value)} />
+                </div>
+                <label className="flex items-center gap-2 text-sm text-[#0A0A0F]">
+                  <input
+                    type="checkbox"
+                    checked={saveToDirectory}
+                    onChange={(e) => setSaveToDirectory(e.target.checked)}
+                    className="size-4 rounded border-[#E4E4EF] text-[#1E6BFF]"
+                  />
+                  Save to directory
+                </label>
+              </div>
+            )}
+          </div>
+
+          {/* Notes */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-[#0A0A0F]">Notes for reviewers</label>
+            <textarea
+              rows={3}
+              placeholder="Optional notes for the doctor or reviewers"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              className="w-full rounded-lg border border-[#E4E4EF] bg-white p-2.5 text-sm text-[#0A0A0F] outline-none focus:border-[#1E6BFF] focus:ring-2 focus:ring-[#1E6BFF]/20"
+            />
+          </div>
+
+          {error && <ErrorState message={error} />}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => handleOpenChange(false)} disabled={submitting}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSubmit}
+              disabled={submitting || !canSubmit}
+              className="bg-[#1E6BFF] hover:bg-[#1E6BFF]/90"
+            >
+              {submitting ? 'Initiating...' : 'Initiate & Send OTP'}
             </Button>
           </DialogFooter>
         </div>

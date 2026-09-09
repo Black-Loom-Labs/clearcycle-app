@@ -144,12 +144,28 @@ export interface Claim {
   pipeline_stages: Record<string, PipelineStageStatus>
   // Not present in every API response — only used opportunistically for display.
   patient_name?: string
+  treating_doctor_name?: string
 }
 
 export interface ClaimStatusUpdate {
   claim_id: string
   status: string
   updated_at: string
+}
+
+export interface Doctor {
+  id: string
+  name: string
+  phone: string
+  speciality?: string
+  registration_number?: string
+  status: 'enabled' | 'disabled'
+}
+
+export interface WorkflowInitiateResult {
+  claim_id: string
+  status: string
+  doctor_name?: string
 }
 
 export interface ClaimsListResponse {
@@ -408,4 +424,26 @@ export const api = {
     ),
   rebuildPayerPersonaProfiles: () =>
     apiFetch<{ status?: string }>('/payer-persona/rebuild', { method: 'POST' }),
+  getDoctors: (search?: string) =>
+    apiFetch<{ doctors: Doctor[] }>(`/doctors${search ? `?search=${encodeURIComponent(search)}` : ''}`),
+  createDoctor: (body: { name: string; phone: string; speciality?: string; registration_number?: string }) =>
+    apiFetch<Doctor>('/doctors', { method: 'POST', body: JSON.stringify(body) }),
+  updateDoctor: (
+    doctorId: string,
+    body: { name?: string; phone?: string; speciality?: string; registration_number?: string }
+  ) => apiFetch<Doctor>(`/doctors/${doctorId}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  disableDoctor: (doctorId: string) => apiFetch<void>(`/doctors/${doctorId}`, { method: 'DELETE' }),
+  initiateWorkflow: (body: {
+    claim_id: string
+    doctor_id?: string
+    doctor_name?: string
+    doctor_phone?: string
+    doctor_speciality?: string
+    save_doctor_to_directory?: boolean
+    notes?: string
+  }) =>
+    apiFetch<WorkflowInitiateResult>('/workflows/initiate', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
 }
