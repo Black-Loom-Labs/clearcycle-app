@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import Link from 'next/link'
-import { ArrowLeft, AlertCircle, Check, Copy, Download, RefreshCw, ShieldAlert, Stethoscope, Search } from 'lucide-react'
+import { ArrowLeft, AlertCircle, Check, Copy, Download, Loader2, RefreshCw, ShieldAlert, Stethoscope, Search } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Separator } from '@/components/ui/separator'
@@ -82,11 +82,13 @@ async function safeFetch<T>(fn: () => Promise<T>): Promise<T | null> {
 
 export function ClaimDetailClient({ claimId }: { claimId: string }) {
   const carrierDirectory = useCarrierDirectory()
+  const { showToast } = useToast()
   const [data, setData] = React.useState<ClaimDetailData | null>(null)
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
   const [statusDialogOpen, setStatusDialogOpen] = React.useState(false)
   const [initiateDialogOpen, setInitiateDialogOpen] = React.useState(false)
+  const [generatingPackage, setGeneratingPackage] = React.useState(false)
   const role = React.useMemo(() => getCurrentRole(), [])
   const canUpdateStatus = role === 'admin' || role === 'billing_staff'
   const canInitiateApproval = role === 'admin' || role === 'billing_staff'
@@ -120,6 +122,24 @@ export function ClaimDetailClient({ claimId }: { claimId: string }) {
     const blob = new Blob([html], { type: 'text/html' })
     const url = URL.createObjectURL(blob)
     window.open(url, '_blank')
+  }
+
+  const handleGenerateSubmissionPackage = async () => {
+    setGeneratingPackage(true)
+    try {
+      const res = await apiFetch('/reports/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ report_type: 'submission_package', claim_id: claimId }),
+      })
+      if (!res.ok) throw new Error('Failed to generate submission package')
+      const { presigned_url } = await res.json()
+      window.open(presigned_url, '_blank')
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : 'Failed to generate submission package')
+    } finally {
+      setGeneratingPackage(false)
+    }
   }
 
   if (loading) return <DetailSkeleton />
@@ -174,6 +194,21 @@ export function ClaimDetailClient({ claimId }: { claimId: string }) {
                 <Download className="size-3.5" />
                 Download Report
               </Button>
+              {(claim?.status === 'approved' || claim?.status === 'submitted' || claim?.status === 'paid') && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleGenerateSubmissionPackage}
+                  disabled={generatingPackage}
+                >
+                  {generatingPackage ? (
+                    <Loader2 className="size-3.5 animate-spin" />
+                  ) : (
+                    <span>📦</span>
+                  )}
+                  {generatingPackage ? 'Generating...' : 'Submission Package'}
+                </Button>
+              )}
               {canUpdateStatus && (
                 <Button size="sm" variant="outline" onClick={() => setStatusDialogOpen(true)}>
                   <RefreshCw className="size-3.5" />
