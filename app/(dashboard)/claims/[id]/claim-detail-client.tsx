@@ -48,6 +48,8 @@ import {
   type FinancialSplit,
   type PayerPersonaScrubResult,
   type Doctor,
+  type WorkflowResult,
+  type WorkflowBillingEdit,
 } from '@/lib/api'
 import { apiFetch } from '@/lib/auth'
 import { resolveCarrierName, useCarrierDirectory } from '@/lib/carriers'
@@ -67,6 +69,7 @@ interface ClaimDetailData {
   adjudication: AdjudicationResult | null
   denialIntel: DenialIntelResult | null
   preEncounter: PreEncounterResult | null
+  workflow: WorkflowResult | null
 }
 
 async function safeFetch<T>(fn: () => Promise<T>): Promise<T | null> {
@@ -87,6 +90,7 @@ export function ClaimDetailClient({ claimId }: { claimId: string }) {
   const role = React.useMemo(() => getCurrentRole(), [])
   const canUpdateStatus = role === 'admin' || role === 'billing_staff'
   const canInitiateApproval = role === 'admin' || role === 'billing_staff'
+  const canBillingReview = role === 'admin' || role === 'billing_staff'
 
   const load = React.useCallback(() => {
     setLoading(true)
@@ -97,9 +101,10 @@ export function ClaimDetailClient({ claimId }: { claimId: string }) {
       safeFetch(() => api.getAdjudication(claimId)),
       safeFetch(() => api.getDenialIntel(claimId)),
       safeFetch(() => api.getPreEncounter(claimId)),
+      safeFetch(() => api.getWorkflow(claimId)),
     ])
-      .then(([claim, coding, adjudication, denialIntel, preEncounter]) => {
-        setData({ claim, coding, adjudication, denialIntel, preEncounter })
+      .then(([claim, coding, adjudication, denialIntel, preEncounter, workflow]) => {
+        setData({ claim, coding, adjudication, denialIntel, preEncounter, workflow })
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false))
@@ -121,7 +126,7 @@ export function ClaimDetailClient({ claimId }: { claimId: string }) {
   if (error) return <ErrorState message={error} onRetry={load} />
   if (!data) return null
 
-  const { claim, coding, adjudication, denialIntel, preEncounter } = data
+  const { claim, coding, adjudication, denialIntel, preEncounter, workflow } = data
   const carrierId = claim?.payer_id ?? adjudication?.carrier_id ?? null
   const icdCodes = coding?.result?.diagnoses?.map((d) => d.code) ?? []
   const cptCodes = coding?.result?.procedures?.map((p) => p.code) ?? []
@@ -365,6 +370,24 @@ export function ClaimDetailClient({ claimId }: { claimId: string }) {
 
       {/* Pre-Discharge Collection */}
       <FinancialSplitCard claimId={claimId} />
+
+      {canBillingReview && claim?.status === 'pending_approval' && workflow && (
+        <>
+          <Separator />
+          <BillingReviewPanel claimId={claimId} workflow={workflow} onReviewed={load} />
+        </>
+      )}
+
+      {role === 'admin' && workflow?.status === 'admin_review' && (
+        <>
+          <Separator />
+          {workflow.admin_status === 'pending' ? (
+            <AdminApprovalPanel workflow={workflow} onReviewed={load} />
+          ) : (
+            <AdminApprovalReadOnlySummary workflow={workflow} />
+          )}
+        </>
+      )}
 
       <Separator />
 
@@ -1121,6 +1144,464 @@ function FinancialSplitCard({ claimId }: { claimId: string }) {
           )}
         </div>
       )}
+    </section>
+  )
+}
+
+function BillingReviewPanel({
+  claimId,
+  workflow,
+  onReviewed,
+}: {
+  claimId: string
+  workflow: WorkflowResult
+  onReviewed: () => void
+}) {
+  const { showToast } = useToast()
+  const [split, setSplit] = React.useState<FinancialSplit | null>(null)
+
+  const [showAdjustmentForm, setShowAdjustmentForm] = React.useState(false)
+  const [adjustments, setAdjustments] = React.useState<WorkflowBillingEdit[]>([])
+  const [adjItem, setAdjItem] = React.useState('')
+  const [adjOriginal, setAdjOriginal] = React.useState('')
+  const [adjRevised, setAdjRevised] = React.useState('')
+  const [adjReason, setAdjReason] = React.useState('')
+
+  const [notes, setNotes] = React.useState('')
+  const [submitting, setSubmitting] = React.useState(false)
+  const [error, setError] = React.useState<string | null>(null)
+
+  React.useEffect(() => {
+    api
+      .getClaimSplit(claimId)
+      .then(setSplit)
+      .catch(() => setSplit(null))
+  }, [claimId])
+
+  const pending = workflow.billing_status === 'pending'
+
+  function addAdjustment() {
+    if (!adjItem.trim() || !adjReason.trim()) return
+    setAdjustments((prev) => [
+      ...prev,
+      {
+        item: adjItem.trim(),
+        original_amount: Number(adjOriginal) || 0,
+        revised_amount: Number(adjRevised) || 0,
+        reason: adjReason.trim(),
+      },
+    ])
+    setAdjItem('')
+    setAdjOriginal('')
+    setAdjRevised('')
+    setAdjReason('')
+    setShowAdjustmentForm(false)
+  }
+
+  async function handleDecision(decision: 'approved' | 'rejected') {
+    const verb = decision === 'approved' ? 'approve' : 'reject'
+    if (!window.confirm(`Are you sure you want to ${verb} this claim review?`)) return
+    setSubmitting(true)
+    setError(null)
+    try {
+      await api.submitBillingReview(workflow.id, {
+        decision,
+        notes: notes.trim(),
+        edits: adjustments,
+      })
+      showToast('Billing review submitted')
+      onReviewed()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to submit billing review')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <section className="flex flex-col gap-3">
+      <div className="flex items-center gap-2">
+        <h2 className="text-base font-semibold text-[#0A0A0F]">Billing Manager Review</h2>
+        {pending && <Badge className="bg-[#FEF3C7] text-[#D97706]">Your Review Required</Badge>}
+      </div>
+
+      {!pending ? (
+        <div className="rounded-lg border border-[#E4E4EF] bg-[#F7F8FA] p-4">
+          <p className="text-sm text-[#0A0A0F]">
+            You reviewed this claim on{' '}
+            {workflow.billing_reviewed_at
+              ? new Date(workflow.billing_reviewed_at).toLocaleDateString('en-IN')
+              : '—'}
+            . Decision:{' '}
+            <span className="font-semibold">
+              {workflow.billing_status === 'approved' ? 'Approved' : 'Rejected'}
+            </span>
+            . Notes: {workflow.billing_notes || '—'}
+          </p>
+          {workflow.billing_edits && workflow.billing_edits.length > 0 && (
+            <ul className="mt-2 list-disc pl-4 text-sm text-[#5C5C6B]">
+              {workflow.billing_edits.map((edit, i) => (
+                <li key={i}>
+                  {edit.item}: {formatINRFull(edit.original_amount)} → {formatINRFull(edit.revised_amount)}{' '}
+                  ({edit.reason})
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      ) : (
+        <div className="flex flex-col gap-4">
+          {/* Section 1: Financial Summary */}
+          <div className="flex flex-col gap-3 rounded-lg border border-[#E4E4EF] p-4">
+            <h3 className="text-sm font-semibold text-[#0A0A0F]">Financial Summary</h3>
+            {split ? (
+              <>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                  <StatBox label="Total Billed" value={formatINRFull(split.total_billed_inr)} />
+                  <StatBox
+                    label="Insurer Pays"
+                    value={formatINRFull(split.insurer_pays_inr)}
+                    valueClass="text-[#16A34A]"
+                  />
+                  <StatBox
+                    label="Collect from Patient"
+                    value={formatINRFull(split.patient_pays_inr)}
+                    valueClass={split.patient_pays_inr > 0 ? 'text-[#D97706]' : undefined}
+                  />
+                </div>
+                {split.deduction_breakdown?.length > 0 && (
+                  <ul className="list-disc pl-4 text-sm text-[#5C5C6B]">
+                    {split.deduction_breakdown.map((d, i) => (
+                      <li key={i}>
+                        {d.category}: {formatINRFull(d.amount_inr)} — {d.reason}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </>
+            ) : (
+              <p className="text-sm text-[#5C5C6B]">Financial split not available</p>
+            )}
+          </div>
+
+          {/* Section 2: Adjustments */}
+          <div className="flex flex-col gap-3 rounded-lg border border-[#E4E4EF] p-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-[#0A0A0F]">Adjustments (optional)</h3>
+              {!showAdjustmentForm && (
+                <Button size="sm" variant="outline" onClick={() => setShowAdjustmentForm(true)}>
+                  Add adjustment
+                </Button>
+              )}
+            </div>
+
+            {adjustments.length > 0 && (
+              <div className="overflow-x-auto rounded-lg border border-[#E4E4EF] bg-white">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Item</TableHead>
+                      <TableHead>Original</TableHead>
+                      <TableHead>Revised</TableHead>
+                      <TableHead>Reason</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {adjustments.map((adj, i) => (
+                      <TableRow key={i}>
+                        <TableCell className="text-sm">{adj.item}</TableCell>
+                        <TableCell className="text-sm">{formatINRFull(adj.original_amount)}</TableCell>
+                        <TableCell className="text-sm">{formatINRFull(adj.revised_amount)}</TableCell>
+                        <TableCell className="text-sm text-[#5C5C6B]">{adj.reason}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+
+            {showAdjustmentForm && (
+              <div className="flex flex-col gap-3 rounded-lg border border-[#E4E4EF] bg-[#F7F8FA] p-3">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-sm font-medium text-[#0A0A0F]">Item description</label>
+                  <Input value={adjItem} onChange={(e) => setAdjItem(e.target.value)} />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-sm font-medium text-[#0A0A0F]">Original amount</label>
+                    <Input
+                      type="number"
+                      value={adjOriginal}
+                      onChange={(e) => setAdjOriginal(e.target.value)}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-sm font-medium text-[#0A0A0F]">Revised amount</label>
+                    <Input
+                      type="number"
+                      value={adjRevised}
+                      onChange={(e) => setAdjRevised(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-sm font-medium text-[#0A0A0F]">Reason</label>
+                  <Input value={adjReason} onChange={(e) => setAdjReason(e.target.value)} />
+                </div>
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={addAdjustment} className="bg-[#1E6BFF] hover:bg-[#1E6BFF]/90">
+                    Add
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => setShowAdjustmentForm(false)}>
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Section 3: Decision */}
+          <div className="flex flex-col gap-3 rounded-lg border border-[#E4E4EF] p-4">
+            <h3 className="text-sm font-semibold text-[#0A0A0F]">Decision</h3>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium text-[#0A0A0F]">
+                Notes for admin and doctor (optional)
+              </label>
+              <textarea
+                rows={3}
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                className="w-full rounded-lg border border-[#E4E4EF] bg-white p-2.5 text-sm text-[#0A0A0F] outline-none focus:border-[#1E6BFF] focus:ring-2 focus:ring-[#1E6BFF]/20"
+              />
+            </div>
+
+            {error && <ErrorState message={error} />}
+
+            <div className="flex gap-3">
+              <Button
+                disabled={submitting}
+                onClick={() => handleDecision('approved')}
+                className="flex-1 bg-[#16A34A] hover:bg-[#16A34A]/90"
+              >
+                ✅ Approve
+              </Button>
+              <Button
+                disabled={submitting}
+                onClick={() => handleDecision('rejected')}
+                className="flex-1 bg-[#DC2626] hover:bg-[#DC2626]/90"
+              >
+                ❌ Send Back for Revision
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </section>
+  )
+}
+
+function ReviewStatusBadge({ status }: { status?: string }) {
+  const approved = status === 'approved'
+  return (
+    <Badge className={approved ? 'bg-[#DCFCE7] text-[#16A34A]' : 'bg-[#FEE2E2] text-[#DC2626]'}>
+      {approved ? 'Approved' : 'Rejected'}
+    </Badge>
+  )
+}
+
+function AdminApprovalPanel({
+  workflow,
+  onReviewed,
+}: {
+  workflow: WorkflowResult
+  onReviewed: () => void
+}) {
+  const { showToast } = useToast()
+  const [notes, setNotes] = React.useState('')
+  const [submitting, setSubmitting] = React.useState(false)
+  const [error, setError] = React.useState<string | null>(null)
+
+  const draft = workflow.consolidated_draft
+  const doctorReview = draft?.doctor_review
+  const billingReview = draft?.billing_review
+  const riskScore = draft?.risk_score
+  const riskWarnings = draft?.risk_warnings ?? []
+  const requiredDocs = draft?.required_docs ?? []
+
+  async function handleDecision(decision: 'approved' | 'rejected') {
+    const verb = decision === 'approved' ? 'approve' : 'reject'
+    if (!window.confirm(`Are you sure you want to ${verb} this claim review?`)) return
+    setSubmitting(true)
+    setError(null)
+    try {
+      await api.submitAdminReview(workflow.id, { decision, notes: notes.trim() })
+      showToast('Admin review submitted')
+      onReviewed()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to submit admin review')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <section className="flex flex-col gap-3">
+      <div className="flex items-center gap-2">
+        <h2 className="text-base font-semibold text-[#0A0A0F]">Admin Final Approval</h2>
+        <Badge className="bg-[#FEE2E2] text-[#DC2626]">Action Required</Badge>
+      </div>
+
+      <div className="flex flex-col gap-4">
+        {/* Section 1: Doctor Review Summary */}
+        <div className="flex flex-col gap-2 rounded-lg border border-[#E4E4EF] p-4">
+          <div className="flex items-center gap-2">
+            <h3 className="text-sm font-semibold text-[#0A0A0F]">Doctor Review Summary</h3>
+            {doctorReview && <ReviewStatusBadge status={doctorReview.status} />}
+          </div>
+          {!doctorReview ? (
+            <p className="text-sm text-[#5C5C6B]">Not applicable</p>
+          ) : (
+            <div className="flex flex-col gap-1 text-sm text-[#5C5C6B]">
+              <span>
+                {doctorReview.doctor_name ?? '—'}
+                {doctorReview.reviewed_at
+                  ? ` · reviewed ${new Date(doctorReview.reviewed_at).toLocaleString('en-IN')}`
+                  : ''}
+              </span>
+              {doctorReview.notes && <span>Notes: {doctorReview.notes}</span>}
+              {doctorReview.coding_edits && doctorReview.coding_edits.length > 0 && (
+                <ul className="list-disc pl-4">
+                  {doctorReview.coding_edits.map((edit, i) => (
+                    <li key={i}>{JSON.stringify(edit)}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Section 2: Billing Review Summary */}
+        <div className="flex flex-col gap-2 rounded-lg border border-[#E4E4EF] p-4">
+          <div className="flex items-center gap-2">
+            <h3 className="text-sm font-semibold text-[#0A0A0F]">Billing Review Summary</h3>
+            {billingReview && <ReviewStatusBadge status={billingReview.status} />}
+          </div>
+          {!billingReview ? (
+            <p className="text-sm text-[#5C5C6B]">Not applicable</p>
+          ) : (
+            <div className="flex flex-col gap-1 text-sm text-[#5C5C6B]">
+              {billingReview.reviewed_at && (
+                <span>Reviewed {new Date(billingReview.reviewed_at).toLocaleString('en-IN')}</span>
+              )}
+              {billingReview.notes && <span>Notes: {billingReview.notes}</span>}
+              {billingReview.financial_edits && billingReview.financial_edits.length > 0 && (
+                <ul className="list-disc pl-4">
+                  {billingReview.financial_edits.map((edit, i) => (
+                    <li key={i}>
+                      {edit.item}: {formatINRFull(edit.original_amount)} → {formatINRFull(edit.revised_amount)}{' '}
+                      ({edit.reason})
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Section 3: Risk & Required Docs */}
+        <div className="flex flex-col gap-2 rounded-lg border border-[#E4E4EF] p-4">
+          <div className="flex items-center gap-2">
+            <h3 className="text-sm font-semibold text-[#0A0A0F]">Risk &amp; Required Docs</h3>
+            {riskScore !== undefined && riskScore !== null && (
+              <Badge
+                className={cn(
+                  riskScore > 0.65
+                    ? 'bg-[#FEE2E2] text-[#DC2626]'
+                    : riskScore >= 0.35
+                    ? 'bg-[#FEF3C7] text-[#D97706]'
+                    : 'bg-[#DCFCE7] text-[#16A34A]'
+                )}
+              >
+                {Math.round(riskScore * 100)}%
+              </Badge>
+            )}
+          </div>
+          {riskWarnings.length > 0 && (
+            <div className="flex flex-col gap-2">
+              {riskWarnings.map((w, i) => (
+                <div key={i} className="rounded-lg border border-[#E4E4EF] bg-white p-3">
+                  <div className="flex items-center gap-2">
+                    <Badge className={w.severity === 'high' ? 'bg-[#FEE2E2] text-[#DC2626]' : 'bg-[#FEF3C7] text-[#D97706]'}>
+                      {w.severity === 'high' ? 'HIGH' : 'MEDIUM'}
+                    </Badge>
+                    <span className="text-sm text-[#0A0A0F]">{w.message}</span>
+                  </div>
+                  {w.action && <p className="mt-1 text-sm font-bold text-[#0A0A0F]">{w.action}</p>}
+                </div>
+              ))}
+            </div>
+          )}
+          {requiredDocs.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {requiredDocs.map((doc, i) => (
+                <span key={i} className="rounded-full bg-[#E4E4EF] px-2 py-0.5 text-xs text-[#5C5C6B]">
+                  {doc}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Section 4: Final Decision */}
+        <div className="flex flex-col gap-3 rounded-lg border border-[#E4E4EF] p-4">
+          <h3 className="text-sm font-semibold text-[#0A0A0F]">Final Decision</h3>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-[#0A0A0F]">Admin notes (optional)</label>
+            <textarea
+              rows={3}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              className="w-full rounded-lg border border-[#E4E4EF] bg-white p-2.5 text-sm text-[#0A0A0F] outline-none focus:border-[#1E6BFF] focus:ring-2 focus:ring-[#1E6BFF]/20"
+            />
+          </div>
+
+          {error && <ErrorState message={error} />}
+
+          <div className="flex gap-3">
+            <Button
+              disabled={submitting}
+              onClick={() => handleDecision('approved')}
+              className="min-h-[48px] flex-1 bg-[#16A34A] text-base hover:bg-[#16A34A]/90"
+            >
+              ✅ Approve &amp; Queue for Submission
+            </Button>
+            <Button
+              disabled={submitting}
+              onClick={() => handleDecision('rejected')}
+              className="min-h-[48px] flex-1 bg-[#DC2626] text-base hover:bg-[#DC2626]/90"
+            >
+              ❌ Send Back for Revision
+            </Button>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function AdminApprovalReadOnlySummary({ workflow }: { workflow: WorkflowResult }) {
+  return (
+    <section className="flex flex-col gap-3">
+      <h2 className="text-base font-semibold text-[#0A0A0F]">Admin Final Approval</h2>
+      <div className="rounded-lg border border-[#E4E4EF] bg-[#F7F8FA] p-4">
+        <p className="text-sm text-[#0A0A0F]">
+          Admin {workflow.admin_status === 'approved' ? 'approved' : 'rejected'} on{' '}
+          {workflow.admin_reviewed_at
+            ? new Date(workflow.admin_reviewed_at).toLocaleDateString('en-IN')
+            : '—'}
+          . Notes: {workflow.admin_notes || '—'}
+        </p>
+      </div>
     </section>
   )
 }

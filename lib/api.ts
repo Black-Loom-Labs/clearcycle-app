@@ -168,6 +168,52 @@ export interface WorkflowInitiateResult {
   doctor_name?: string
 }
 
+export interface WorkflowBillingEdit {
+  item: string
+  original_amount: number
+  revised_amount: number
+  reason: string
+}
+
+export interface WorkflowRiskWarning {
+  severity: string
+  message: string
+  action?: string
+}
+
+export interface ConsolidatedDraftReview {
+  status?: 'approved' | 'rejected' | string
+  doctor_name?: string
+  reviewed_at?: string
+  notes?: string
+  coding_edits?: unknown[]
+  financial_edits?: WorkflowBillingEdit[]
+}
+
+export interface ConsolidatedDraft {
+  doctor_review?: ConsolidatedDraftReview
+  billing_review?: ConsolidatedDraftReview
+  risk_score?: number
+  risk_warnings?: WorkflowRiskWarning[]
+  required_docs?: string[]
+}
+
+export interface WorkflowResult {
+  id: string
+  claim_id: string
+  status?: string
+  billing_status?: 'pending' | 'approved' | 'rejected' | string
+  billing_decision?: 'approved' | 'rejected' | string
+  billing_notes?: string
+  billing_edits?: WorkflowBillingEdit[]
+  billing_reviewed_at?: string
+  admin_status?: 'pending' | 'approved' | 'rejected' | string
+  admin_notes?: string
+  admin_reviewed_at?: string
+  consolidated_draft?: ConsolidatedDraft
+  [key: string]: unknown
+}
+
 export interface ClaimsListResponse {
   claims: Claim[]
   total: number
@@ -443,6 +489,20 @@ export const api = {
     notes?: string
   }) =>
     apiFetch<WorkflowInitiateResult>('/workflows/initiate', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  getWorkflow: (claimId: string) => apiFetch<WorkflowResult>(`/claims/${claimId}/workflow`),
+  submitBillingReview: (
+    workflowId: string,
+    body: { decision: 'approved' | 'rejected'; notes: string; edits: WorkflowBillingEdit[] }
+  ) =>
+    apiFetch<void>(`/workflows/${workflowId}/billing-review`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  submitAdminReview: (workflowId: string, body: { decision: 'approved' | 'rejected'; notes: string }) =>
+    apiFetch<void>(`/workflows/${workflowId}/admin-review`, {
       method: 'POST',
       body: JSON.stringify(body),
     }),
