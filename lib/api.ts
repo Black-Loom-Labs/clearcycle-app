@@ -202,6 +202,10 @@ export interface WorkflowResult {
   id: string
   claim_id: string
   status?: string
+  doctor_status?: 'pending' | 'approved' | 'rejected' | string
+  doctor_name?: string
+  doctor_notes?: string
+  doctor_reviewed_at?: string
   billing_status?: 'pending' | 'approved' | 'rejected' | string
   billing_decision?: 'approved' | 'rejected' | string
   billing_notes?: string
@@ -212,6 +216,38 @@ export interface WorkflowResult {
   admin_reviewed_at?: string
   consolidated_draft?: ConsolidatedDraft
   [key: string]: unknown
+}
+
+export interface AuditTrailEvent {
+  id: string
+  event_type: string
+  actor_type: 'system' | 'doctor' | 'billing_staff' | 'admin' | 'tpa_portal' | string
+  actor_name: string | null
+  notes: string | null
+  previous_state: Record<string, unknown>
+  new_state: Record<string, unknown>
+  changes: unknown[]
+  created_at: string
+}
+
+export interface AuditTrailResponse {
+  events: AuditTrailEvent[]
+  total: number
+}
+
+export interface DocumentVersion {
+  id: string
+  document_type: string
+  version_number: number
+  created_at: string
+  created_by_name?: string | null
+  change_reason?: string | null
+  is_current: boolean
+  content: unknown
+}
+
+export interface DocumentVersionsResponse {
+  versions: DocumentVersion[]
 }
 
 export interface ClaimsListResponse {
@@ -506,4 +542,7 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(body),
     }),
+  getAuditTrail: (claimId: string) => apiFetch<AuditTrailResponse>(`/claims/${claimId}/audit-trail`),
+  getDocumentVersions: (claimId: string) =>
+    apiFetch<DocumentVersionsResponse>(`/claims/${claimId}/versions`),
 }

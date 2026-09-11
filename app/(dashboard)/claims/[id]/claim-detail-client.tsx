@@ -32,6 +32,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Card, CardContent } from '@/components/ui/card'
 import { ErrorState } from '@/components/api-states'
 import { CopyableId } from '@/components/copyable-id'
@@ -50,6 +51,8 @@ import {
   type Doctor,
   type WorkflowResult,
   type WorkflowBillingEdit,
+  type AuditTrailEvent,
+  type DocumentVersion,
 } from '@/lib/api'
 import { apiFetch } from '@/lib/auth'
 import { resolveCarrierName, useCarrierDirectory } from '@/lib/carriers'
@@ -527,6 +530,31 @@ export function ClaimDetailClient({ claimId }: { claimId: string }) {
             )}
           </div>
         )}
+      </section>
+
+      <Separator />
+
+      {/* Additional Details */}
+      <section className="flex flex-col gap-3">
+        <h2 className="text-base font-semibold text-[#0A0A0F]">Additional Details</h2>
+        <Tabs defaultValue="audit-trail">
+          <TabsList>
+            <TabsTrigger value="audit-trail">Audit Trail</TabsTrigger>
+            {workflow && <TabsTrigger value="workflow">Workflow</TabsTrigger>}
+            <TabsTrigger value="versions">Versions</TabsTrigger>
+          </TabsList>
+          <TabsContent value="audit-trail" className="pt-3">
+            <AuditTrailTab claimId={claimId} />
+          </TabsContent>
+          {workflow && (
+            <TabsContent value="workflow" className="pt-3">
+              <WorkflowTab workflow={workflow} />
+            </TabsContent>
+          )}
+          <TabsContent value="versions" className="pt-3">
+            <VersionsTab claimId={claimId} />
+          </TabsContent>
+        </Tabs>
       </section>
     </div>
   )
@@ -1680,6 +1708,305 @@ function LetterBlock({ title, text }: { title: string; text: string }) {
         text={text}
         className="max-h-96 overflow-auto whitespace-pre-wrap p-4 text-sm text-[#0A0A0F]"
       />
+    </div>
+  )
+}
+
+const ACTOR_BADGE_STYLE: Record<string, string> = {
+  system: 'bg-[#E4E4EF] text-[#5C5C6B]',
+  doctor: 'bg-[#EAF2FF] text-[#1E6BFF]',
+  billing_staff: 'bg-[#FEF3C7] text-[#D97706]',
+  admin: 'bg-[#F3E8FF] text-[#7C3AED]',
+  tpa_portal: 'bg-[#DCFCE7] text-[#16A34A]',
+}
+
+function humanizeLabel(value: string) {
+  return value
+    .split('_')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
+}
+
+function AuditTrailTab({ claimId }: { claimId: string }) {
+  const [events, setEvents] = React.useState<AuditTrailEvent[] | null>(null)
+  const [loading, setLoading] = React.useState(true)
+  const [error, setError] = React.useState<string | null>(null)
+
+  const load = React.useCallback(() => {
+    setLoading(true)
+    setError(null)
+    api
+      .getAuditTrail(claimId)
+      .then((res) => setEvents(res.events))
+      .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load audit trail'))
+      .finally(() => setLoading(false))
+  }, [claimId])
+
+  React.useEffect(() => {
+    load()
+  }, [load])
+
+  if (loading) return <Skeleton className="h-48 rounded-lg" />
+  if (error) return <ErrorState message={error} onRetry={load} />
+  if (!events || events.length === 0) {
+    return (
+      <p className="text-sm text-[#5C5C6B]">
+        No audit trail yet — workflow hasn&apos;t been initiated
+      </p>
+    )
+  }
+
+  const sorted = [...events].sort(
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  )
+
+  return (
+    <div className="flex flex-col gap-3">
+      {sorted.map((event) => (
+        <div key={event.id} className="flex gap-4 rounded-lg border border-[#E4E4EF] bg-white p-3">
+          <span className="w-36 shrink-0 text-xs text-[#5C5C6B]">
+            {new Date(event.created_at).toLocaleString('en-IN')}
+          </span>
+          <div className="flex flex-col gap-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm font-medium text-[#0A0A0F]">
+                {humanizeLabel(event.event_type)}
+              </span>
+              <Badge className={ACTOR_BADGE_STYLE[event.actor_type] ?? 'bg-[#E4E4EF] text-[#5C5C6B]'}>
+                {humanizeLabel(event.actor_type)}
+              </Badge>
+              {event.actor_name && (
+                <span className="text-xs text-[#5C5C6B]">{event.actor_name}</span>
+              )}
+            </div>
+            {event.notes && <p className="text-sm text-[#5C5C6B]">{event.notes}</p>}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function stepStatusIcon(status?: string) {
+  if (status === 'approved') return '✅'
+  if (status === 'rejected') return '❌'
+  if (status === 'pending') return '⏳'
+  return '⬜'
+}
+
+function WorkflowTab({ workflow }: { workflow: WorkflowResult }) {
+  const draft = workflow.consolidated_draft
+  const showDraftSummary = workflow.status === 'admin_review' || workflow.status === 'approved'
+
+  const steps = [
+    { label: 'Initiated', status: 'approved', detail: null as React.ReactNode },
+    {
+      label: 'Doctor Review',
+      status: workflow.doctor_status,
+      detail: (
+        <>
+          {workflow.doctor_name && <span>{workflow.doctor_name}</span>}
+          {workflow.doctor_reviewed_at && (
+            <span>{new Date(workflow.doctor_reviewed_at).toLocaleDateString('en-IN')}</span>
+          )}
+        </>
+      ),
+    },
+    {
+      label: 'Billing Review',
+      status: workflow.billing_status,
+      detail: workflow.billing_reviewed_at ? (
+        <span>{new Date(workflow.billing_reviewed_at).toLocaleDateString('en-IN')}</span>
+      ) : null,
+    },
+    {
+      label: 'Admin Approval',
+      status: workflow.admin_status,
+      detail: (
+        <>
+          {workflow.admin_reviewed_at && (
+            <span>{new Date(workflow.admin_reviewed_at).toLocaleDateString('en-IN')}</span>
+          )}
+          {workflow.admin_notes && <span>{workflow.admin_notes}</span>}
+        </>
+      ),
+    },
+  ]
+
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="flex items-start">
+        {steps.map((step, i) => (
+          <React.Fragment key={step.label}>
+            <div className="flex flex-1 flex-col items-center gap-1.5 text-center">
+              <span className="text-2xl leading-none">{stepStatusIcon(step.status)}</span>
+              <span className="text-sm font-medium text-[#0A0A0F]">{step.label}</span>
+              {step.status && (
+                <Badge
+                  className={
+                    step.status === 'approved'
+                      ? 'bg-[#DCFCE7] text-[#16A34A]'
+                      : step.status === 'rejected'
+                      ? 'bg-[#FEE2E2] text-[#DC2626]'
+                      : 'bg-[#FEF3C7] text-[#D97706]'
+                  }
+                >
+                  {humanizeLabel(step.status)}
+                </Badge>
+              )}
+              <div className="flex flex-col gap-0.5 text-xs text-[#5C5C6B]">{step.detail}</div>
+            </div>
+            {i < steps.length - 1 && <div className="mt-4 h-0.5 flex-1 bg-[#E4E4EF]" />}
+          </React.Fragment>
+        ))}
+      </div>
+
+      {showDraftSummary && draft && (
+        <div className="flex flex-col gap-3 rounded-lg border border-[#E4E4EF] p-4">
+          <h3 className="text-sm font-semibold text-[#0A0A0F]">Consolidated Draft Summary</h3>
+
+          {draft.doctor_review?.coding_edits && draft.doctor_review.coding_edits.length > 0 && (
+            <div className="flex flex-col gap-1">
+              <span className="text-xs font-medium text-[#0A0A0F]">Doctor Coding Edits</span>
+              <ul className="list-disc pl-4 text-sm text-[#5C5C6B]">
+                {draft.doctor_review.coding_edits.map((edit, i) => (
+                  <li key={i}>{JSON.stringify(edit)}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {draft.billing_review?.financial_edits && draft.billing_review.financial_edits.length > 0 && (
+            <div className="flex flex-col gap-1">
+              <span className="text-xs font-medium text-[#0A0A0F]">Billing Financial Edits</span>
+              <ul className="list-disc pl-4 text-sm text-[#5C5C6B]">
+                {draft.billing_review.financial_edits.map((edit, i) => (
+                  <li key={i}>
+                    {edit.item}: {formatINRFull(edit.original_amount)} → {formatINRFull(edit.revised_amount)}{' '}
+                    ({edit.reason})
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {draft.risk_score !== undefined && draft.risk_score !== null && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-[#0A0A0F]">Risk Score</span>
+              <Badge
+                className={
+                  draft.risk_score > 0.65
+                    ? 'bg-[#FEE2E2] text-[#DC2626]'
+                    : draft.risk_score >= 0.35
+                    ? 'bg-[#FEF3C7] text-[#D97706]'
+                    : 'bg-[#DCFCE7] text-[#16A34A]'
+                }
+              >
+                {Math.round(draft.risk_score * 100)}%
+              </Badge>
+            </div>
+          )}
+
+          {draft.required_docs && draft.required_docs.length > 0 && (
+            <div className="flex flex-col gap-1">
+              <span className="text-xs font-medium text-[#0A0A0F]">Required Docs</span>
+              <div className="flex flex-wrap gap-1.5">
+                {draft.required_docs.map((doc, i) => (
+                  <span key={i} className="rounded-full bg-[#E4E4EF] px-2 py-0.5 text-xs text-[#5C5C6B]">
+                    {doc}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function VersionsTab({ claimId }: { claimId: string }) {
+  const [versions, setVersions] = React.useState<DocumentVersion[] | null>(null)
+  const [loading, setLoading] = React.useState(true)
+  const [error, setError] = React.useState<string | null>(null)
+  const [viewing, setViewing] = React.useState<DocumentVersion | null>(null)
+
+  const load = React.useCallback(() => {
+    setLoading(true)
+    setError(null)
+    api
+      .getDocumentVersions(claimId)
+      .then((res) => setVersions(res.versions))
+      .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load document versions'))
+      .finally(() => setLoading(false))
+  }, [claimId])
+
+  React.useEffect(() => {
+    load()
+  }, [load])
+
+  if (loading) return <Skeleton className="h-48 rounded-lg" />
+  if (error) return <ErrorState message={error} onRetry={load} />
+  if (!versions || versions.length === 0) {
+    return <p className="text-sm text-[#5C5C6B]">No document versions yet</p>
+  }
+
+  const grouped = versions.reduce<Record<string, DocumentVersion[]>>((acc, v) => {
+    ;(acc[v.document_type] ??= []).push(v)
+    return acc
+  }, {})
+
+  return (
+    <div className="flex flex-col gap-3">
+      {Object.entries(grouped).map(([docType, docVersions]) => (
+        <details key={docType} className="rounded-lg border border-[#E4E4EF] bg-white" open>
+          <summary className="cursor-pointer px-3 py-2 text-sm font-semibold text-[#0A0A0F]">
+            {humanizeLabel(docType)}
+          </summary>
+          <div className="flex flex-col gap-2 border-t border-[#E4E4EF] p-3">
+            {[...docVersions]
+              .sort((a, b) => b.version_number - a.version_number)
+              .map((v) => (
+                <div
+                  key={v.id}
+                  className="flex items-center justify-between gap-3 rounded-lg border border-[#E4E4EF] p-2.5"
+                >
+                  <div className="flex flex-col gap-0.5">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-[#0A0A0F]">v{v.version_number}</span>
+                      {v.is_current && (
+                        <Badge className="bg-[#DCFCE7] text-[#16A34A]">Current</Badge>
+                      )}
+                    </div>
+                    <span className="text-xs text-[#5C5C6B]">
+                      {new Date(v.created_at).toLocaleString('en-IN')}
+                      {v.created_by_name ? ` · ${v.created_by_name}` : ''}
+                    </span>
+                    {v.change_reason && (
+                      <span className="text-xs text-[#5C5C6B]">{v.change_reason}</span>
+                    )}
+                  </div>
+                  <Button size="sm" variant="outline" onClick={() => setViewing(v)}>
+                    View
+                  </Button>
+                </div>
+              ))}
+          </div>
+        </details>
+      ))}
+
+      <Dialog open={!!viewing} onOpenChange={(open) => !open && setViewing(null)}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>
+              {viewing ? `${humanizeLabel(viewing.document_type)} · v${viewing.version_number}` : ''}
+            </DialogTitle>
+          </DialogHeader>
+          <pre className="max-h-[60vh] overflow-auto rounded-lg bg-[#F7F8FA] p-3 font-mono text-xs text-[#0A0A0F]">
+            {viewing ? JSON.stringify(viewing.content, null, 2) : ''}
+          </pre>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
