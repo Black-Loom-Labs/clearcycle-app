@@ -504,6 +504,21 @@ export const api = {
     ),
   getCodingResult: (claimId: string) =>
     apiFetch<CodingResult>(`/results/${claimId}/coding`),
+  updateCoding: (
+    claimId: string,
+    body: {
+      diagnoses: CodingDiagnosis[]
+      procedures: CodingProcedure[]
+      notes: string
+      action: 'approve'
+    }
+  ) =>
+    apiFetch<Claim>(`/claims/${claimId}/coding`, {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    }),
+  requestRecode: (claimId: string) =>
+    apiFetch<{ status: string }>(`/claims/${claimId}/recode`, { method: 'POST' }),
   getAdjudication: (claimId: string) =>
     apiFetch<AdjudicationResult>(`/results/${claimId}/adjudication`),
   getDenialIntel: (claimId: string) =>

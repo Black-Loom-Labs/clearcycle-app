@@ -43,6 +43,8 @@ import {
   api,
   type Claim,
   type CodingResult,
+  type CodingDiagnosis,
+  type CodingProcedure,
   type AdjudicationResult,
   type DenialIntelResult,
   type PreEncounterResult,
@@ -97,6 +99,7 @@ export function ClaimDetailClient({ claimId }: { claimId: string }) {
   const canUpdateStatus = role === 'admin' || role === 'billing_staff'
   const canInitiateApproval = role === 'admin' || role === 'billing_staff'
   const canBillingReview = role === 'admin' || role === 'billing_staff'
+  const canReviewCoding = role === 'admin' || role === 'billing_staff'
 
   const load = React.useCallback(() => {
     setLoading(true)
@@ -286,6 +289,13 @@ export function ClaimDetailClient({ claimId }: { claimId: string }) {
 
       {claim?.status === 'approved' && (
         <SubmitToTpaSection claimId={claimId} carrierId={carrierId} onUpdated={load} />
+      )}
+
+      {canReviewCoding && claim?.status === 'review_required' && coding && (
+        <>
+          <ReviewCodingPanel claimId={claimId} coding={coding} onUpdated={load} />
+          <Separator />
+        </>
       )}
 
       <Separator />
@@ -622,6 +632,338 @@ function CodingTable({
         </TableBody>
       </Table>
     </div>
+  )
+}
+
+const DIAGNOSIS_CODE_RE = /^[A-Z][0-9]{2}\.?[0-9A-Z]*$/
+const PROCEDURE_CODE_RE = /^[0-9]{5}$/
+
+function ReviewCodingPanel({
+  claimId,
+  coding,
+  onUpdated,
+}: {
+  claimId: string
+  coding: CodingResult
+  onUpdated: () => void
+}) {
+  const { showToast } = useToast()
+  const [diagnoses, setDiagnoses] = React.useState<CodingDiagnosis[]>(coding.result.diagnoses)
+  const [procedures, setProcedures] = React.useState<CodingProcedure[]>(coding.result.procedures)
+  const [diagErrors, setDiagErrors] = React.useState<Record<number, string>>({})
+  const [procErrors, setProcErrors] = React.useState<Record<number, string>>({})
+  const [notes, setNotes] = React.useState('')
+  const [approving, setApproving] = React.useState(false)
+  const [recoding, setRecoding] = React.useState(false)
+  const [error, setError] = React.useState<string | null>(null)
+
+  React.useEffect(() => {
+    setDiagnoses(coding.result.diagnoses)
+    setProcedures(coding.result.procedures)
+  }, [coding])
+
+  function updateDiagnosis(i: number, patch: Partial<CodingDiagnosis>) {
+    setDiagnoses((prev) => prev.map((d, idx) => (idx === i ? { ...d, ...patch } : d)))
+  }
+
+  function updateProcedure(i: number, patch: Partial<CodingProcedure>) {
+    setProcedures((prev) => prev.map((p, idx) => (idx === i ? { ...p, ...patch } : p)))
+  }
+
+  function validateDiagnosisCode(i: number, code: string) {
+    setDiagErrors((prev) => {
+      const next = { ...prev }
+      if (code && !DIAGNOSIS_CODE_RE.test(code)) {
+        next[i] = 'Invalid ICD-10 format (e.g. A00.0)'
+      } else {
+        delete next[i]
+      }
+      return next
+    })
+  }
+
+  function validateProcedureCode(i: number, code: string) {
+    setProcErrors((prev) => {
+      const next = { ...prev }
+      if (code && !PROCEDURE_CODE_RE.test(code)) {
+        next[i] = 'Invalid CPT format (5 digits)'
+      } else {
+        delete next[i]
+      }
+      return next
+    })
+  }
+
+  function addDiagnosis() {
+    setDiagnoses((prev) => [...prev, { code: '', description: '', confidence: 0, diagnosis_type: 'secondary' }])
+  }
+
+  function removeDiagnosis(i: number) {
+    setDiagnoses((prev) => prev.filter((_, idx) => idx !== i))
+    setDiagErrors((prev) => {
+      const next = { ...prev }
+      delete next[i]
+      return next
+    })
+  }
+
+  function addProcedure() {
+    setProcedures((prev) => [...prev, { code: '', description: '', units: 1, confidence: 0 }])
+  }
+
+  function removeProcedure(i: number) {
+    setProcedures((prev) => prev.filter((_, idx) => idx !== i))
+    setProcErrors((prev) => {
+      const next = { ...prev }
+      delete next[i]
+      return next
+    })
+  }
+
+  const hasErrors = Object.keys(diagErrors).length > 0 || Object.keys(procErrors).length > 0
+
+  async function handleApprove() {
+    setApproving(true)
+    setError(null)
+    try {
+      await api.updateCoding(claimId, {
+        diagnoses,
+        procedures,
+        notes: notes.trim(),
+        action: 'approve',
+      })
+      showToast('Codes approved — claim ready for processing')
+      onUpdated()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to approve codes')
+    } finally {
+      setApproving(false)
+    }
+  }
+
+  async function handleRecode() {
+    setRecoding(true)
+    setError(null)
+    try {
+      await api.requestRecode(claimId)
+      showToast('Re-coding requested — results will update shortly')
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to request re-coding')
+    } finally {
+      setRecoding(false)
+    }
+  }
+
+  return (
+    <section className="flex flex-col gap-3">
+      <div className="rounded-lg border border-[#FDE68A] bg-[#FEF3C7] px-4 py-3">
+        <p className="text-sm font-semibold text-[#92400E]">
+          This claim requires coding review before it can proceed.
+        </p>
+      </div>
+
+      <div className="flex flex-col gap-4 rounded-lg border border-[#E4E4EF] p-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-base font-semibold text-[#0A0A0F]">Review Coding</h2>
+          <Badge className="bg-[#EAF2FF] text-[#1E6BFF]">
+            {Math.round(coding.result.overall_confidence * 100)}% confidence
+          </Badge>
+        </div>
+
+        {error && <ErrorState message={error} />}
+
+        {/* Diagnoses */}
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-[#0A0A0F]">Diagnoses</h3>
+          </div>
+          <div className="overflow-x-auto rounded-lg border border-[#E4E4EF] bg-white">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Code</TableHead>
+                  <TableHead>Description</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Confidence</TableHead>
+                  <TableHead></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {diagnoses.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center text-sm text-[#5C5C6B]">
+                      None
+                    </TableCell>
+                  </TableRow>
+                )}
+                {diagnoses.map((d, i) => (
+                  <TableRow key={i}>
+                    <TableCell>
+                      <Input
+                        className="h-8 w-28 font-mono text-sm"
+                        value={d.code}
+                        onChange={(e) => updateDiagnosis(i, { code: e.target.value })}
+                        onBlur={(e) => validateDiagnosisCode(i, e.target.value)}
+                      />
+                      {diagErrors[i] && (
+                        <p className="mt-1 text-xs text-[#DC2626]">{diagErrors[i]}</p>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        className="h-8 text-sm"
+                        value={d.description}
+                        onChange={(e) => updateDiagnosis(i, { description: e.target.value })}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Select
+                        value={d.diagnosis_type ?? 'secondary'}
+                        onValueChange={(v) => updateDiagnosis(i, { diagnosis_type: v ?? 'secondary' })}
+                      >
+                        <SelectTrigger className="h-8 w-36 text-sm">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="primary">Primary</SelectItem>
+                          <SelectItem value="secondary">Secondary</SelectItem>
+                          <SelectItem value="admitting">Admitting</SelectItem>
+                          <SelectItem value="comorbidity">Comorbidity</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
+                    <TableCell>
+                      <Badge className="bg-[#EAF2FF] text-[#1E6BFF]">
+                        {Math.round(d.confidence * 100)}%
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-[#DC2626] hover:bg-[#FEE2E2] hover:text-[#DC2626]"
+                        onClick={() => removeDiagnosis(i)}
+                      >
+                        <AlertCircle className="size-3.5" />
+                        Remove
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          <Button size="sm" variant="outline" onClick={addDiagnosis} className="self-start">
+            Add Diagnosis
+          </Button>
+        </div>
+
+        {/* Procedures */}
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-[#0A0A0F]">Procedures</h3>
+          </div>
+          <div className="overflow-x-auto rounded-lg border border-[#E4E4EF] bg-white">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Code</TableHead>
+                  <TableHead>Description</TableHead>
+                  <TableHead>Units</TableHead>
+                  <TableHead>Confidence</TableHead>
+                  <TableHead></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {procedures.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center text-sm text-[#5C5C6B]">
+                      None
+                    </TableCell>
+                  </TableRow>
+                )}
+                {procedures.map((p, i) => (
+                  <TableRow key={i}>
+                    <TableCell>
+                      <Input
+                        className="h-8 w-28 font-mono text-sm"
+                        value={p.code}
+                        onChange={(e) => updateProcedure(i, { code: e.target.value })}
+                        onBlur={(e) => validateProcedureCode(i, e.target.value)}
+                      />
+                      {procErrors[i] && (
+                        <p className="mt-1 text-xs text-[#DC2626]">{procErrors[i]}</p>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        className="h-8 text-sm"
+                        value={p.description}
+                        onChange={(e) => updateProcedure(i, { description: e.target.value })}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        type="number"
+                        min={1}
+                        className="h-8 w-20 text-sm"
+                        value={p.units ?? 1}
+                        onChange={(e) => updateProcedure(i, { units: Number(e.target.value) || 0 })}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Badge className="bg-[#EAF2FF] text-[#1E6BFF]">
+                        {Math.round(p.confidence * 100)}%
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-[#DC2626] hover:bg-[#FEE2E2] hover:text-[#DC2626]"
+                        onClick={() => removeProcedure(i)}
+                      >
+                        <AlertCircle className="size-3.5" />
+                        Remove
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          <Button size="sm" variant="outline" onClick={addProcedure} className="self-start">
+            Add Procedure
+          </Button>
+        </div>
+
+        {/* Notes */}
+        <div className="flex flex-col gap-1.5">
+          <label className="text-sm font-medium text-[#0A0A0F]">Review notes</label>
+          <textarea
+            className="min-h-20 rounded-md border border-[#E4E4EF] px-3 py-2 text-sm outline-none focus:border-[#1E6BFF]"
+            placeholder="Add coding notes (optional)"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+          />
+        </div>
+
+        <div className="flex gap-2">
+          <Button
+            onClick={handleApprove}
+            disabled={approving || recoding || hasErrors}
+            className="bg-[#16A34A] hover:bg-[#16A34A]/90"
+          >
+            {approving ? <Loader2 className="size-3.5 animate-spin" /> : <Check className="size-3.5" />}
+            Approve Codes
+          </Button>
+          <Button variant="outline" onClick={handleRecode} disabled={approving || recoding}>
+            {recoding ? <Loader2 className="size-3.5 animate-spin" /> : <RefreshCw className="size-3.5" />}
+            Request Re-coding
+          </Button>
+        </div>
+      </div>
+    </section>
   )
 }
 
