@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ClearCycle",
-  description: "Insurance claims pipeline management for Indian hospitals",
+  title: "ClearCycle — Claims Intelligence Platform",
+  description: "AI-powered hospital revenue cycle management for the Indian private insurance market.",
   icons: {
     icon: "/favicon.svg",
   },
@@ -24,7 +24,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} h-full scroll-smooth antialiased`}
     >
       <body className="min-h-full flex flex-col bg-[#F7F8FA] text-[#0A0A0F]">{children}</body>
     </html>
