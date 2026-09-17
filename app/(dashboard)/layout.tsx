@@ -7,6 +7,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import {
   LayoutDashboard,
   FileText,
+  Users,
   UserCheck,
   AlertTriangle,
   BarChart2,
@@ -35,6 +36,7 @@ import { canAccessRoute, getCurrentRole, type Role } from '@/lib/roles'
 const NAV_ITEMS = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/claims', label: 'Claims', icon: FileText },
+  { href: '/patients', label: 'Patients', icon: Users },
   { href: '/pre-encounter', label: 'Pre-Encounter', icon: UserCheck },
   { href: '/denial-intel', label: 'Denial Intel', icon: AlertTriangle },
   { href: '/payer-intelligence', label: 'Payer Intelligence', icon: BarChart2 },

@@ -145,6 +145,7 @@ export interface Claim {
   // Not present in every API response — only used opportunistically for display.
   patient_name?: string
   treating_doctor_name?: string
+  patient_id?: string | null
 }
 
 export interface ClaimStatusUpdate {
@@ -368,6 +369,57 @@ export interface PreEncounterResult {
   generated_at: string
 }
 
+export interface InsurancePolicy {
+  carrier_id: string
+  policy_number: string
+  plan_name: string
+  sum_insured_inr: number
+  sum_insured_used_inr: number
+  room_category: string
+  room_rent_limit_inr: number
+  policy_start_date: string
+  policy_end_date: string
+  copay_pct: number
+  pre_existing_conditions: string[]
+  pre_auth_required_above_inr: number
+  active: boolean
+}
+
+export interface Patient {
+  patient_id: string
+  hospital_id: string
+  external_id: string | null
+  name: string
+  dob: string | null
+  insurance_policies: InsurancePolicy[]
+  active_policies: number
+  created_at: string
+}
+
+// The API omits insurance_policies (rather than sending []) for patients
+// with none on file — normalize so callers can always safely map/filter it.
+function normalizePatient(patient: Patient): Patient {
+  return { ...patient, insurance_policies: patient.insurance_policies ?? [] }
+}
+
+export interface PatientsListResponse {
+  patients: Patient[]
+  total: number
+}
+
+export interface CarrierSetting {
+  carrier_id: string
+  submission_mode: 'manual_assist' | 'semi_autonomous' | 'fully_autonomous'
+  portal_credentials_stored: boolean
+  enabled: boolean
+  updated_at: string
+}
+
+export interface PatientClaimsResponse {
+  claims: Claim[]
+  total: number
+}
+
 export interface Carrier {
   carrier_id: string
   carrier_name: string
@@ -462,6 +514,15 @@ export const api = {
   getARCarriers: (hospitalId: string) =>
     apiFetch(`/ar/carriers?hospital_id=${hospitalId}`),
   getCarriers: () => apiFetch<Carrier[]>('/carriers'),
+  getCarrierSettings: () => apiFetch<CarrierSetting[]>('/settings/carriers'),
+  updateCarrierSetting: (
+    carrierId: string,
+    data: Partial<Pick<CarrierSetting, 'submission_mode' | 'enabled'>>
+  ) =>
+    apiFetch<CarrierSetting>(`/settings/carriers/${carrierId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
   getARLeakage: (hospitalId: string) =>
     apiFetch(`/ar/leakage?hospital_id=${hospitalId}`),
   getARVelocity: (hospitalId: string) =>
@@ -473,6 +534,7 @@ export const api = {
     carrier_id?: string
     claim_id?: string
     bill_file?: File
+    patient_id?: string
   }) => {
     const form = new FormData()
     form.append('file', fields.file)
@@ -481,11 +543,15 @@ export const api = {
     if (fields.carrier_id) form.append('carrier_id', fields.carrier_id)
     if (fields.claim_id) form.append('claim_id', fields.claim_id)
     if (fields.bill_file) form.append('bill_file', fields.bill_file)
+    if (fields.patient_id) form.append('patient_id', fields.patient_id)
     return apiFetchForm<IngestDocumentResponse>('/ingest/document', form)
   },
   getClaim: (claimId: string) => apiFetch<Claim>(`/claims/${claimId}`),
   getClaimSplit: (claimId: string) => apiFetch<FinancialSplit>(`/claims/${claimId}/split`),
-  updateClaimStatus: (claimId: string, body: { status: string; notes?: string }) =>
+  updateClaimStatus: (
+    claimId: string,
+    body: { status: string; notes?: string; tpa_reference?: string }
+  ) =>
     apiFetch<ClaimStatusUpdate>(`/claims/${claimId}/status`, {
       method: 'PATCH',
       body: JSON.stringify(body),
@@ -545,4 +611,35 @@ export const api = {
   getAuditTrail: (claimId: string) => apiFetch<AuditTrailResponse>(`/claims/${claimId}/audit-trail`),
   getDocumentVersions: (claimId: string) =>
     apiFetch<DocumentVersionsResponse>(`/claims/${claimId}/versions`),
+  getPatients: (search?: string) =>
+    apiFetch<PatientsListResponse>(`/patients${search ? `?search=${encodeURIComponent(search)}` : ''}`).then(
+      (res) => ({ ...res, patients: (res.patients ?? []).map(normalizePatient) })
+    ),
+  getPatient: (id: string) => apiFetch<Patient>(`/patients/${id}`).then(normalizePatient),
+  createPatient: (body: {
+    hospital_id: string
+    name: string
+    dob: string
+    external_id?: string
+    insurance_policies?: Omit<InsurancePolicy, 'sum_insured_used_inr' | 'active'>[]
+  }) =>
+    apiFetch<Patient>('/patients', { method: 'POST', body: JSON.stringify(body) }).then(normalizePatient),
+  updatePatientPolicy: (id: string, policy: Omit<InsurancePolicy, 'sum_insured_used_inr' | 'active'>) =>
+    apiFetch<Patient>(`/patients/${id}/policy`, { method: 'PUT', body: JSON.stringify(policy) }).then(
+      normalizePatient
+    ),
+  getPatientClaims: (id: string) => apiFetch<PatientClaimsResponse>(`/patients/${id}/claims`),
+  runPreEncounterCheck: (body: {
+    hospital_id: string
+    patient_id: string
+    carrier_id: string
+    admission_date: string
+    proposed_icd_codes?: string[]
+    proposed_cpt_codes?: string[]
+    estimated_cost_inr?: number
+  }) =>
+    apiFetch<PreEncounterResult>('/pre-encounter/check', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
 }

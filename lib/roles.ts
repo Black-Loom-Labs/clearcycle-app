@@ -7,6 +7,7 @@ export type Role = 'read_only' | 'billing_staff' | 'admin'
 const ROUTE_ROLES: Record<string, Role[]> = {
   '/dashboard': ['read_only', 'billing_staff', 'admin'],
   '/claims': ['read_only', 'billing_staff', 'admin'],
+  '/patients': ['read_only', 'billing_staff', 'admin'],
   '/pre-encounter': ['billing_staff', 'admin'],
   '/denial-intel': ['billing_staff', 'admin'],
   '/payer-intelligence': ['billing_staff', 'admin'],

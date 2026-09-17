@@ -58,6 +58,7 @@ import { apiFetch } from '@/lib/auth'
 import { resolveCarrierName, useCarrierDirectory } from '@/lib/carriers'
 import { getCurrentRole } from '@/lib/roles'
 import { cn, formatINRFull } from '@/lib/utils'
+import { SubmitToTpaSection } from './submit-to-tpa-section'
 
 const STATUS_TRANSITIONS: Record<string, string[]> = {
   ready: ['submitted'],
@@ -276,6 +277,10 @@ export function ClaimDetailClient({ claimId }: { claimId: string }) {
           onOpenChange={setInitiateDialogOpen}
           onInitiated={load}
         />
+      )}
+
+      {claim?.status === 'approved' && (
+        <SubmitToTpaSection claimId={claimId} carrierId={carrierId} onUpdated={load} />
       )}
 
       <Separator />

@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { useHospital } from '@/lib/hospital-context'
 import { DoctorsTab } from './doctors-tab'
+import { TpaSubmissionTab } from './tpa-submission-tab'
 
 export default function SettingsPage() {
   const { hospitalId, hospitals } = useHospital()
@@ -16,6 +17,7 @@ export default function SettingsPage() {
         <TabsList>
           <TabsTrigger value="general">General</TabsTrigger>
           <TabsTrigger value="doctors">Doctors</TabsTrigger>
+          <TabsTrigger value="tpa-submission">TPA Submission</TabsTrigger>
         </TabsList>
         <TabsContent value="general">
           <Card className="border-[#E4E4EF]">
@@ -30,6 +32,9 @@ export default function SettingsPage() {
         </TabsContent>
         <TabsContent value="doctors">
           <DoctorsTab />
+        </TabsContent>
+        <TabsContent value="tpa-submission">
+          <TpaSubmissionTab />
         </TabsContent>
       </Tabs>
     </div>
