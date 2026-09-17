@@ -2,15 +2,19 @@ import { cn } from '@/lib/utils'
 
 const STATUS_STYLES: Record<string, string> = {
   ready: 'bg-[#DCFCE7] text-[#16A34A]',
-  approved: 'bg-[#DCFCE7] text-[#16A34A]',
+  approved: 'bg-[#CCFBF1] text-[#0D9488]',
   fully_approved: 'bg-[#DCFCE7] text-[#16A34A]',
   cleared: 'bg-[#DCFCE7] text-[#16A34A]',
+  paid: 'bg-[#DCFCE7] text-[#16A34A]',
+  submitted: 'bg-[#DBEAFE] text-[#1E6BFF]',
   pending: 'bg-[#FEF3C7] text-[#D97706]',
   partial: 'bg-[#FEF3C7] text-[#D97706]',
   conditional: 'bg-[#FEF3C7] text-[#D97706]',
+  appealed: 'bg-[#FEF3C7] text-[#D97706]',
   review_required: 'bg-[#FEE2E2] text-[#DC2626]',
   blocked: 'bg-[#FEE2E2] text-[#DC2626]',
   rejected: 'bg-[#FEE2E2] text-[#DC2626]',
+  denied: 'bg-[#FEE2E2] text-[#DC2626]',
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -18,12 +22,16 @@ const STATUS_LABELS: Record<string, string> = {
   approved: 'Approved',
   fully_approved: 'Fully Approved',
   cleared: 'Cleared',
+  paid: 'Paid',
+  submitted: 'Submitted',
   pending: 'Pending',
   partial: 'Partial',
   conditional: 'Conditional',
+  appealed: 'Appealed',
   review_required: 'Review Required',
   blocked: 'Blocked',
   rejected: 'Rejected',
+  denied: 'Denied',
 }
 
 export function StatusBadge({ status, className }: { status: string; className?: string }) {

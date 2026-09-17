@@ -183,7 +183,12 @@ export function ClaimDetailClient({ claimId }: { claimId: string }) {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <CopyableId value={claimId} className="text-sm" />
-              <StatusBadge status={status} />
+              <StatusBadge status={claim?.status ?? status} />
+              {workflow?.admin_status && (
+                <span className="inline-flex items-center rounded-full bg-[#E4E4EF] px-2 py-0.5 text-xs font-medium text-[#5C5C6B]">
+                  Approval: {workflow.admin_status === 'approved' ? '✅ Approved' : workflow.admin_status === 'rejected' ? '❌ Rejected' : '⏳ Pending'}
+                </span>
+              )}
             </div>
             <div className="flex items-center gap-4 text-sm text-[#5C5C6B]">
               {readiness != null && (
@@ -553,7 +558,7 @@ export function ClaimDetailClient({ claimId }: { claimId: string }) {
           </TabsContent>
           {workflow && (
             <TabsContent value="workflow" className="pt-3">
-              <WorkflowTab workflow={workflow} />
+              <WorkflowTab workflow={workflow} claimId={claimId} />
             </TabsContent>
           )}
           <TabsContent value="versions" className="pt-3">
@@ -1799,7 +1804,7 @@ function stepStatusIcon(status?: string) {
   return '⬜'
 }
 
-function WorkflowTab({ workflow }: { workflow: WorkflowResult }) {
+function WorkflowTab({ workflow, claimId }: { workflow: WorkflowResult; claimId: string }) {
   const draft = workflow.consolidated_draft
   const showDraftSummary = workflow.status === 'admin_review' || workflow.status === 'approved'
 
@@ -1924,6 +1929,114 @@ function WorkflowTab({ workflow }: { workflow: WorkflowResult }) {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      <ClaimLifecycleSection claimId={claimId} />
+    </div>
+  )
+}
+
+const LIFECYCLE_EVENT_LABELS: Record<string, string> = {
+  workflow_initiated: 'Approval Workflow Started',
+  doctor_approved: 'Doctor Reviewed',
+  billing_approved: 'Billing Reviewed',
+  admin_approved: 'Admin Approved',
+  draft_consolidated: 'Consolidated Draft Built',
+  status_changed_to_submitted: 'Submitted to TPA',
+  status_changed_to_paid: 'Payment Received',
+  status_changed_to_denied: 'Claim Denied',
+  status_changed_to_appealed: 'Appeal Filed',
+}
+
+function lifecycleDotColor(eventType: string): string {
+  if (eventType === 'status_changed_to_denied') return 'bg-[#DC2626]'
+  if (eventType === 'status_changed_to_submitted' || eventType === 'status_changed_to_appealed') {
+    return 'bg-[#1E6BFF]'
+  }
+  if (
+    eventType === 'workflow_initiated' ||
+    eventType === 'doctor_approved' ||
+    eventType === 'billing_approved' ||
+    eventType === 'admin_approved' ||
+    eventType === 'draft_consolidated'
+  ) {
+    return 'bg-[#16A34A]'
+  }
+  return 'bg-[#5C5C6B]'
+}
+
+function ClaimLifecycleSection({ claimId }: { claimId: string }) {
+  const [events, setEvents] = React.useState<AuditTrailEvent[] | null>(null)
+  const [loading, setLoading] = React.useState(true)
+  const [error, setError] = React.useState<string | null>(null)
+
+  const load = React.useCallback(() => {
+    setLoading(true)
+    setError(null)
+    api
+      .getAuditTrail(claimId)
+      .then((res) => setEvents(res.events))
+      .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load claim status history'))
+      .finally(() => setLoading(false))
+  }, [claimId])
+
+  React.useEffect(() => {
+    load()
+  }, [load])
+
+  const lifecycleEvents = (events ?? [])
+    .filter(
+      (e) =>
+        e.event_type.startsWith('status_changed_to_') ||
+        [
+          'workflow_initiated',
+          'doctor_approved',
+          'billing_approved',
+          'admin_approved',
+          'draft_consolidated',
+        ].includes(e.event_type)
+    )
+    .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+
+  return (
+    <div className="flex flex-col gap-3">
+      <h3 className="text-sm font-semibold text-[#0A0A0F]">Claim Status History</h3>
+      {loading ? (
+        <Skeleton className="h-32 rounded-lg" />
+      ) : error ? (
+        <ErrorState message={error} onRetry={load} />
+      ) : lifecycleEvents.length === 0 ? (
+        <p className="text-sm text-[#5C5C6B]">No status history yet</p>
+      ) : (
+        <div className="flex flex-col">
+          {lifecycleEvents.map((event, i) => {
+            const tpaReference =
+              typeof event.new_state?.tpa_reference === 'string' ? event.new_state.tpa_reference : null
+            return (
+              <div key={event.id} className="flex gap-3">
+                <div className="flex flex-col items-center">
+                  <span className={cn('mt-1 size-2.5 shrink-0 rounded-full', lifecycleDotColor(event.event_type))} />
+                  {i < lifecycleEvents.length - 1 && <div className="w-px flex-1 bg-[#E4E4EF]" />}
+                </div>
+                <div className="flex flex-col gap-1 pb-4">
+                  <span className="text-sm font-semibold text-[#0A0A0F]">
+                    {LIFECYCLE_EVENT_LABELS[event.event_type] ?? humanizeLabel(event.event_type)}
+                  </span>
+                  {tpaReference && (
+                    <span className="w-fit rounded bg-[#E4E4EF] px-1.5 py-0.5 font-mono text-xs text-[#0A0A0F]">
+                      TPA Ref: {tpaReference}
+                    </span>
+                  )}
+                  <div className="flex flex-wrap items-center gap-2 text-xs text-[#5C5C6B]">
+                    {event.actor_name && <span>{event.actor_name}</span>}
+                    <span>{new Date(event.created_at).toLocaleString('en-IN')}</span>
+                  </div>
+                  {event.notes && <p className="text-sm text-[#5C5C6B]">{event.notes}</p>}
+                </div>
+              </div>
+            )
+          })}
         </div>
       )}
     </div>
