@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import Link from 'next/link'
-import { Search, X, FileText } from 'lucide-react'
+import { Search, X, FileText, Download } from 'lucide-react'
 import {
   Table,
   TableBody,
@@ -32,6 +32,7 @@ import { formatINR, formatRelativeTime } from '@/lib/utils'
 import { DEV_MODE } from '@/lib/config'
 import { canUpload, getCurrentRole, type Role } from '@/lib/roles'
 import { NewClaimDialog } from './new-claim-dialog'
+import { ImportCsvDialog } from './import-csv-dialog'
 
 const PER_PAGE = 25
 // The API caps per_page at 100 — used when pulling the full set to search across.
@@ -224,7 +225,16 @@ export default function ClaimsPage() {
             </SelectContent>
           </Select>
         </div>
-        {canUpload(role) && <NewClaimDialog onSubmitted={load} />}
+        {canUpload(role) && (
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" onClick={() => api.downloadCsvTemplate()}>
+              <Download className="size-4" />
+              Template
+            </Button>
+            <ImportCsvDialog onImported={load} />
+            <NewClaimDialog onSubmitted={load} />
+          </div>
+        )}
       </div>
 
       {error ? (

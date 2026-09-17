@@ -407,6 +407,14 @@ export interface PatientsListResponse {
   total: number
 }
 
+export interface CsvImportResult {
+  batch_id: string
+  records_received: number
+  records_queued: number
+  records_failed: number
+  failures: Array<{ index: number; errors: string[] }>
+}
+
 export interface CarrierSetting {
   carrier_id: string
   submission_mode: 'manual_assist' | 'semi_autonomous' | 'fully_autonomous'
@@ -514,6 +522,24 @@ export const api = {
   getARCarriers: (hospitalId: string) =>
     apiFetch(`/ar/carriers?hospital_id=${hospitalId}`),
   getCarriers: () => apiFetch<Carrier[]>('/carriers'),
+  downloadCsvTemplate: async (): Promise<void> => {
+    const res = await authFetch('/ingest/csv/template')
+    if (!res.ok) throw new Error(`API error ${res.status}`)
+    const blob = await res.blob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'clearcycle_claims_template.csv'
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    URL.revokeObjectURL(url)
+  },
+  importCsv: (file: File) => {
+    const form = new FormData()
+    form.append('file', file)
+    return apiFetchForm<CsvImportResult>('/ingest/csv', form)
+  },
   getCarrierSettings: () => apiFetch<CarrierSetting[]>('/settings/carriers'),
   updateCarrierSetting: (
     carrierId: string,
