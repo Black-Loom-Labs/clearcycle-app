@@ -492,6 +492,11 @@ export interface PayerPersonaProfile {
   top_rejection_reason: string
   required_docs: string[]
   common_reasons: PayerPersonaCommonReason[]
+  // Optional: not guaranteed by backend yet, present when available
+  avg_settlement_days?: number
+  total_deducted_inr?: number
+  previous_rejection_rate?: number
+  policy_excluded_reasons?: string[]
   [key: string]: unknown
 }
 

@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from 'react'
-import { ChevronDown, ChevronRight, Loader2, RefreshCw } from 'lucide-react'
+import { ChevronDown, ChevronRight, FileText, Loader2, RefreshCw, TrendingDown, TrendingUp } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -17,15 +17,48 @@ import {
 import { ErrorState, EmptyState } from '@/components/api-states'
 import { useToast } from '@/components/toast'
 import { api, type PayerPersonaProfile } from '@/lib/api'
+import { apiFetch } from '@/lib/auth'
 import { CARRIER_SHORT_NAMES, getCarrierName, resolveCarrierName, useCarrierDirectory } from '@/lib/carriers'
 import { DEV_MODE } from '@/lib/config'
 import { getCurrentRole, type Role } from '@/lib/roles'
-import { cn } from '@/lib/utils'
+import { cn, formatINR } from '@/lib/utils'
 
 function rejectionRateColor(rate: number): string {
   if (rate > 0.65) return 'bg-[#FEE2E2] text-[#DC2626]'
   if (rate >= 0.35) return 'bg-[#FEF3C7] text-[#D97706]'
   return 'bg-[#DCFCE7] text-[#16A34A]'
+}
+
+function TrendIndicator({ current, previous }: { current: number; previous?: number }) {
+  if (previous === undefined || previous === null) return <span className="text-xs text-[#5C5C6B]">—</span>
+  const delta = current - previous
+  const pct = previous !== 0 ? Math.abs(delta / previous) * 100 : 0
+  if (Math.abs(delta) < 0.001) return <span className="text-xs text-[#5C5C6B]">Flat</span>
+  const isUp = delta > 0
+  return (
+    <span className={cn('flex items-center gap-1 text-xs font-semibold', isUp ? 'text-[#DC2626]' : 'text-[#16A34A]')}>
+      {isUp ? <TrendingUp className="size-3.5" /> : <TrendingDown className="size-3.5" />}
+      {pct.toFixed(1)}%
+    </span>
+  )
+}
+
+/**
+ * Cross-references a carrier's denial/common reasons against its own stored
+ * policy exclusions to surface reasons the carrier used that its own policy
+ * document does not explicitly list.
+ */
+function getPolicyPracticeGaps(profile: PayerPersonaProfile): string[] {
+  const excluded = (profile.policy_excluded_reasons ?? []).map((r) => r.toLowerCase().trim())
+  if (excluded.length === 0) return []
+  const usedReasons = new Set<string>()
+  if (profile.top_rejection_reason) usedReasons.add(profile.top_rejection_reason)
+  for (const r of profile.common_reasons ?? []) {
+    if (r.reason) usedReasons.add(r.reason)
+  }
+  return Array.from(usedReasons).filter(
+    (reason) => !excluded.some((ex) => reason.toLowerCase().includes(ex) || ex.includes(reason.toLowerCase()))
+  )
 }
 
 export default function PayerIntelligencePage() {
@@ -42,6 +75,7 @@ export default function PayerIntelligencePage() {
   const [error, setError] = React.useState<string | null>(null)
   const [expanded, setExpanded] = React.useState<number | null>(null)
   const [rebuilding, setRebuilding] = React.useState(false)
+  const [generatingReportFor, setGeneratingReportFor] = React.useState<string | null>(null)
 
   const load = React.useCallback(() => {
     setLoading(true)
@@ -73,6 +107,24 @@ export default function PayerIntelligencePage() {
     }
   }
 
+  async function handleGenerateCarrierReport(carrierId: string) {
+    setGeneratingReportFor(carrierId)
+    try {
+      const res = await apiFetch('/reports/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ report_type: 'carrier_scorecard', carrier_id: carrierId }),
+      })
+      if (!res.ok) throw new Error('Failed to generate carrier report')
+      const { presigned_url } = await res.json()
+      window.open(presigned_url, '_blank')
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : 'Failed to generate carrier report')
+    } finally {
+      setGeneratingReportFor(null)
+    }
+  }
+
   const rows = profiles ?? []
   const totalProfiles = rows.length
   const highestRiskProfile = rows.reduce<PayerPersonaProfile | null>((max, p) => {
@@ -87,6 +139,10 @@ export default function PayerIntelligencePage() {
         <div>
           <h1 className="text-lg font-semibold text-[#0A0A0F]">Payer Intelligence</h1>
           <p className="text-sm text-[#5C5C6B]">Historical rejection patterns across carriers</p>
+          <p className="mt-1 text-sm text-[#5C5C6B]">
+            Use these reports in contract renewal conversations with your TPAs — showing your actual claims
+            performance data.
+          </p>
         </div>
         {role === 'admin' && (
           <Button size="sm" variant="outline" onClick={handleRebuild} disabled={rebuilding}>
@@ -154,6 +210,9 @@ export default function PayerIntelligencePage() {
                   <TableHead>ICD Codes</TableHead>
                   <TableHead>CPT Codes</TableHead>
                   <TableHead>Rejection Rate</TableHead>
+                  <TableHead>Trend</TableHead>
+                  <TableHead>Avg Settlement Days</TableHead>
+                  <TableHead>Total ₹ Deducted</TableHead>
                   <TableHead>Sample Size</TableHead>
                   <TableHead>Top Rejection Reason</TableHead>
                   <TableHead>Required Docs</TableHead>
@@ -162,6 +221,7 @@ export default function PayerIntelligencePage() {
               <TableBody>
                 {rows.map((profile, i) => {
                   const isExpanded = expanded === i
+                  const gaps = getPolicyPracticeGaps(profile)
                   return (
                     <React.Fragment key={i}>
                       <TableRow
@@ -194,6 +254,18 @@ export default function PayerIntelligencePage() {
                             {((profile.rejection_rate ?? 0) * 100).toFixed(1)}%
                           </span>
                         </TableCell>
+                        <TableCell>
+                          <TrendIndicator
+                            current={profile.rejection_rate ?? 0}
+                            previous={profile.previous_rejection_rate}
+                          />
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {profile.avg_settlement_days !== undefined ? `${profile.avg_settlement_days} days` : '—'}
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {profile.total_deducted_inr !== undefined ? formatINR(profile.total_deducted_inr) : '—'}
+                        </TableCell>
                         <TableCell className="text-sm">{profile.sample_size ?? 0}</TableCell>
                         <TableCell className="text-sm text-[#5C5C6B]">
                           {profile.top_rejection_reason || '—'}
@@ -213,7 +285,7 @@ export default function PayerIntelligencePage() {
                       </TableRow>
                       {isExpanded && (
                         <TableRow>
-                          <TableCell colSpan={8} className="bg-[#F7F8FA]">
+                          <TableCell colSpan={11} className="bg-[#F7F8FA]">
                             {profile.common_reasons?.length > 0 ? (
                               <ol className="flex flex-col gap-1.5 py-1 pl-4 text-sm">
                                 {profile.common_reasons
@@ -233,6 +305,41 @@ export default function PayerIntelligencePage() {
                             ) : (
                               <p className="py-1 text-sm text-[#5C5C6B]">No detailed reasons available</p>
                             )}
+
+                            {gaps.length > 0 && (
+                              <div className="mt-3 rounded-lg border border-[#FDE68A] bg-[#FFFBEB] p-3">
+                                <p className="text-xs font-semibold text-[#92400E]">
+                                  Policy vs. Practice Gap: This carrier denied claims for reasons not found in their
+                                  own policy wording.
+                                </p>
+                                <ul className="mt-1.5 flex flex-col gap-1 pl-4 text-sm text-[#78350F]">
+                                  {gaps.map((reason, j) => (
+                                    <li key={j} className="list-disc">
+                                      {reason}
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+
+                            <div className="mt-3">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleGenerateCarrierReport(profile.carrier_id)
+                                }}
+                                disabled={generatingReportFor === profile.carrier_id}
+                              >
+                                {generatingReportFor === profile.carrier_id ? (
+                                  <Loader2 className="size-3.5 animate-spin" />
+                                ) : (
+                                  <FileText className="size-3.5" />
+                                )}
+                                Generate Carrier Report
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       )}
