@@ -500,6 +500,17 @@ export interface PayerPersonaProfile {
   [key: string]: unknown
 }
 
+export interface PayerRiskScore {
+  carrier_id: string
+  risk_score: number
+  risk_label: 'high' | 'medium' | 'low'
+  rejection_rate: number
+  claims_recent_90d: number
+  claims_prior_90d: number
+  avg_settlement_days?: number
+  avg_deduction_pct?: number
+}
+
 export const api = {
   getARDashboard: (hospitalId: string) =>
     apiFetch<ARDashboardResponse>(`/ar/dashboard?hospital_id=${hospitalId}`),
@@ -618,6 +629,8 @@ export const api = {
     ),
   rebuildPayerPersonaProfiles: () =>
     apiFetch<{ status?: string }>('/payer-persona/rebuild', { method: 'POST' }),
+  getPayerRiskScores: () =>
+    apiFetch<{ scores: PayerRiskScore[]; total: number }>('/payer-persona/risk-scores'),
   getDoctors: (search?: string) =>
     apiFetch<{ doctors: Doctor[] }>(`/doctors${search ? `?search=${encodeURIComponent(search)}` : ''}`),
   createDoctor: (body: { name: string; phone: string; speciality?: string; registration_number?: string }) =>

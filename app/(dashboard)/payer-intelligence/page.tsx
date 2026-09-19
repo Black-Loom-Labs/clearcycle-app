@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/table'
 import { ErrorState, EmptyState } from '@/components/api-states'
 import { useToast } from '@/components/toast'
-import { api, type PayerPersonaProfile } from '@/lib/api'
+import { api, type PayerPersonaProfile, type PayerRiskScore } from '@/lib/api'
 import { apiFetch } from '@/lib/auth'
 import { CARRIER_SHORT_NAMES, getCarrierName, resolveCarrierName, useCarrierDirectory } from '@/lib/carriers'
 import { DEV_MODE } from '@/lib/config'
@@ -27,6 +27,28 @@ function rejectionRateColor(rate: number): string {
   if (rate > 0.65) return 'bg-[#FEE2E2] text-[#DC2626]'
   if (rate >= 0.35) return 'bg-[#FEF3C7] text-[#D97706]'
   return 'bg-[#DCFCE7] text-[#16A34A]'
+}
+
+function riskLabelColor(label: string): string {
+  if (label === 'high') return 'bg-[#DC2626] text-white'
+  if (label === 'medium') return 'bg-[#D97706] text-white'
+  return 'bg-[#16A34A] text-white'
+}
+
+function RiskScoreBadge({ score }: { score: PayerRiskScore }) {
+  return (
+    <div className="flex flex-col items-center gap-0.5">
+      <span
+        className={cn(
+          'flex size-10 items-center justify-center rounded-full text-xs font-bold',
+          riskLabelColor(score.risk_label)
+        )}
+      >
+        {score.risk_score}
+      </span>
+      <span className="text-[10px] font-medium text-[#5C5C6B]">Risk Score</span>
+    </div>
+  )
 }
 
 function TrendIndicator({ current, previous }: { current: number; previous?: number }) {
@@ -76,6 +98,17 @@ export default function PayerIntelligencePage() {
   const [expanded, setExpanded] = React.useState<number | null>(null)
   const [rebuilding, setRebuilding] = React.useState(false)
   const [generatingReportFor, setGeneratingReportFor] = React.useState<string | null>(null)
+  const [riskScores, setRiskScores] = React.useState<Record<string, PayerRiskScore>>({})
+
+  React.useEffect(() => {
+    api
+      .getPayerRiskScores()
+      .then((res) => {
+        const scores = Array.isArray(res?.scores) ? res.scores : []
+        setRiskScores(Object.fromEntries(scores.map((s) => [s.carrier_id, s])))
+      })
+      .catch(() => {})
+  }, [])
 
   const load = React.useCallback(() => {
     setLoading(true)
@@ -222,6 +255,7 @@ export default function PayerIntelligencePage() {
                 {rows.map((profile, i) => {
                   const isExpanded = expanded === i
                   const gaps = getPolicyPracticeGaps(profile)
+                  const riskScore = riskScores[profile.carrier_id]
                   return (
                     <React.Fragment key={i}>
                       <TableRow
@@ -236,7 +270,10 @@ export default function PayerIntelligencePage() {
                           )}
                         </TableCell>
                         <TableCell className="text-sm font-medium text-[#0A0A0F]">
-                          {getCarrierName(profile.carrier_id)}
+                          <div className="flex items-center gap-2">
+                            {getCarrierName(profile.carrier_id)}
+                            {riskScore && <RiskScoreBadge score={riskScore} />}
+                          </div>
                         </TableCell>
                         <TableCell className="font-mono text-xs">
                           {profile.icd_codes?.join(', ') || '—'}
@@ -286,6 +323,44 @@ export default function PayerIntelligencePage() {
                       {isExpanded && (
                         <TableRow>
                           <TableCell colSpan={11} className="bg-[#F7F8FA]">
+                            {riskScore && (
+                              <div className="mb-3 grid grid-cols-2 gap-3 rounded-lg border border-[#E4E4EF] bg-white p-3 sm:grid-cols-4">
+                                <div className="flex flex-col gap-0.5">
+                                  <span className="text-xs text-[#5C5C6B]">Denial rate</span>
+                                  <span className="text-sm font-semibold text-[#0A0A0F]">
+                                    {(riskScore.rejection_rate * 100).toFixed(1)}%
+                                  </span>
+                                </div>
+                                <div className="flex flex-col gap-0.5">
+                                  <span className="text-xs text-[#5C5C6B]">Claims trend</span>
+                                  <span className="flex items-center gap-1 text-sm font-semibold text-[#0A0A0F]">
+                                    {riskScore.claims_recent_90d} vs {riskScore.claims_prior_90d}
+                                    {riskScore.claims_recent_90d > riskScore.claims_prior_90d ? (
+                                      <TrendingUp className="size-3.5 text-[#DC2626]" />
+                                    ) : riskScore.claims_recent_90d < riskScore.claims_prior_90d ? (
+                                      <TrendingDown className="size-3.5 text-[#16A34A]" />
+                                    ) : null}
+                                  </span>
+                                  <span className="text-[10px] text-[#5C5C6B]">this quarter vs prior quarter</span>
+                                </div>
+                                <div className="flex flex-col gap-0.5">
+                                  <span className="text-xs text-[#5C5C6B]">Avg settlement</span>
+                                  <span className="text-sm font-semibold text-[#0A0A0F]">
+                                    {riskScore.avg_settlement_days !== undefined
+                                      ? `${riskScore.avg_settlement_days} days`
+                                      : 'Not enough data'}
+                                  </span>
+                                </div>
+                                <div className="flex flex-col gap-0.5">
+                                  <span className="text-xs text-[#5C5C6B]">Avg amount deducted</span>
+                                  <span className="text-sm font-semibold text-[#0A0A0F]">
+                                    {riskScore.avg_deduction_pct !== undefined
+                                      ? `${riskScore.avg_deduction_pct}% of billed value`
+                                      : 'Not enough data'}
+                                  </span>
+                                </div>
+                              </div>
+                            )}
                             {profile.common_reasons?.length > 0 ? (
                               <ol className="flex flex-col gap-1.5 py-1 pl-4 text-sm">
                                 {profile.common_reasons

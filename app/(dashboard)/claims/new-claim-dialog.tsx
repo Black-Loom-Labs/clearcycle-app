@@ -144,6 +144,10 @@ function UploadStep({
       setError('Please attach the discharge summary PDF')
       return
     }
+    if (!selectedCarrierId) {
+      setError('Please select a carrier')
+      return
+    }
     setSubmitting(true)
     setError(null)
     try {
@@ -191,7 +195,7 @@ function UploadStep({
         Patient: <span className="font-medium text-[#0A0A0F]">{patient.name}</span>
       </div>
 
-      <Field label="Carrier">
+      <Field label="Carrier" required>
         <Select value={selectedCarrierId} onValueChange={(v) => setSelectedCarrierId(v ?? '')}>
           <SelectTrigger className="w-full">
             <SelectValue placeholder="Select carrier">
@@ -248,7 +252,7 @@ function UploadStep({
         </Button>
         <Button
           type="button"
-          disabled={submitting}
+          disabled={submitting || !selectedCarrierId}
           onClick={handleSubmit}
           className="bg-[#1E6BFF] hover:bg-[#1E6BFF]/90"
         >
