@@ -9,6 +9,10 @@ export const CARRIER_SHORT_NAMES: Record<string, string> = {
   NIVA_BUPA_001: 'Niva Bupa',
   ICICI_LOMBARD_001: 'ICICI Lombard',
   HDFC_ERGO_001: 'HDFC ERGO',
+  CARE_HEALTH_001: 'Care Health',
+  BAJAJ_ALLIANZ_001: 'Bajaj Allianz',
+  TATA_AIG_001: 'Tata AIG',
+  SBI_GENERAL_001: 'SBI General',
 }
 
 export function getCarrierName(carrierId: string | undefined | null): string {
