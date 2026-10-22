@@ -1,7 +1,10 @@
+import type { Metadata } from "next"
 import Image from "next/image"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Logo } from "@/components/logo"
+import { MarketingFooter } from "@/components/marketing-footer"
 import {
   TrendingDown,
   Clock,
@@ -19,6 +22,56 @@ import {
   PieChart,
   CheckCircle2,
 } from "lucide-react"
+
+export const metadata: Metadata = {
+  title: "ClearCycle — AI Claims Intelligence for Indian Hospitals",
+  description:
+    "ClearCycle automates insurance claim coding, TPA submission and denial appeals for Indian private hospitals. Recover ₹20–36 lakhs per month with AI.",
+  alternates: { canonical: "https://clearcycle.in" },
+}
+
+const organizationSchema = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: "ClearCycle",
+  url: "https://clearcycle.in",
+  logo: "https://clearcycle.in/logo.svg",
+  contactPoint: {
+    "@type": "ContactPoint",
+    telephone: "+91-91632-36777",
+    contactType: "sales",
+    areaServed: "IN",
+    availableLanguage: "en",
+  },
+  sameAs: [],
+}
+
+const softwareSchema = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: "ClearCycle",
+  applicationCategory: "BusinessApplication",
+  operatingSystem: "Web",
+  url: "https://clearcycle.in",
+  description:
+    "AI-powered revenue cycle management platform for Indian private hospitals. Automates ICD-10 coding, TPA claim submission, policy adjudication, and denial appeal letters.",
+  offers: {
+    "@type": "Offer",
+    price: "0",
+    priceCurrency: "INR",
+    description: "3-month free pilot for early hospitals",
+  },
+  featureList: [
+    "AI Medical Coding (ICD-10, CPT)",
+    "Policy Adjudication",
+    "Payer Intelligence — 42 TPA profiles",
+    "Autonomous TPA Submission",
+    "IRDAI-Compliant Appeal Letters",
+    "NHCX FHIR R4 Bundle Generation",
+    "3-Gate Doctor Approval Workflow",
+    "DPDP Act 2023 Compliant",
+  ],
+}
 
 const CONTACT_MAILTO = "mailto:gauravhira24@gmail.com"
 
@@ -135,10 +188,26 @@ const compliance = [
 export default function Home() {
   return (
     <div className="flex flex-col">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareSchema) }}
+      />
       {/* Nav */}
       <header className="sticky top-0 z-50 border-b bg-white">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
-          <Logo className="h-9 w-auto sm:h-10" />
+          <Link href="/" aria-label="ClearCycle home">
+            <Logo className="h-9 w-auto sm:h-10" />
+          </Link>
+          <nav className="hidden items-center gap-6 text-sm font-medium text-muted-foreground sm:flex">
+            <a href="#solution" className="hover:text-foreground transition-colors">Product</a>
+            <a href="#impact" className="hover:text-foreground transition-colors">Impact</a>
+            <Link href="/blog" className="hover:text-foreground transition-colors">Blog</Link>
+            <Link href="/faq" className="hover:text-foreground transition-colors">FAQ</Link>
+          </nav>
           <div className="flex items-center gap-2 sm:gap-4">
             <Button
               nativeButton={false}
@@ -342,13 +411,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-[#0F1F3D] px-4 py-6 sm:px-6">
-        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 sm:flex-row">
-          <Logo className="h-8 w-auto" />
-          <p className="text-sm text-white/50">© 2026 ClearCycle · clearcycle.in</p>
-        </div>
-      </footer>
+      <MarketingFooter />
     </div>
   )
 }
