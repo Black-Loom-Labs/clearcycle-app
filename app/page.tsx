@@ -3,8 +3,8 @@ import Image from "next/image"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Logo } from "@/components/logo"
 import { MarketingFooter } from "@/components/marketing-footer"
+import { MarketingNav } from "@/components/marketing-nav"
 import {
   TrendingDown,
   Clock,
@@ -199,37 +199,11 @@ export default function Home() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareSchema) }}
       />
-      {/* Nav */}
-      <header className="sticky top-0 z-50 border-b bg-white">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
-          <Link href="/" aria-label="ClearCycle home">
-            <Logo className="h-9 w-auto sm:h-10" />
-          </Link>
-          <nav className="hidden items-center gap-6 text-sm font-medium text-muted-foreground sm:flex">
-            <a href="#solution" className="hover:text-foreground transition-colors">Product</a>
-            <a href="#payer-intelligence" className="hover:text-foreground transition-colors">Payer Intelligence</a>
-            <a href="#impact" className="hover:text-foreground transition-colors">Impact</a>
-            <Link href="/blog" className="hover:text-foreground transition-colors">Blog</Link>
-            <Link href="/faq" className="hover:text-foreground transition-colors">FAQ</Link>
-          </nav>
-          <div className="flex items-center gap-2 sm:gap-4">
-            <Button
-              nativeButton={false}
-              render={<a href="https://app.clearcycle.in/dashboard">Login</a>}
-              variant="ghost"
-            />
-            <Button
-              nativeButton={false}
-              render={<a href={CONTACT_MAILTO}>Contact Sales</a>}
-              className="bg-[#1E6BFF] text-white hover:bg-[#1E6BFF]/90"
-            />
-          </div>
-        </div>
-      </header>
+      <MarketingNav />
 
       {/* Hero */}
-      <section className="grid min-h-screen grid-cols-1 bg-[#0F1F3D] lg:grid-cols-2">
-        <div className="flex flex-col justify-center px-4 py-24 sm:px-6 lg:px-16 lg:py-0">
+      <section className="grid min-h-[90vh] grid-cols-1 bg-[#0F1F3D] lg:grid-cols-2">
+        <div className="mx-auto flex w-full max-w-7xl flex-col justify-center px-4 py-20 sm:px-6 lg:col-span-1 lg:py-0 xl:px-10">
           <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl md:text-5xl">
             Your billing team is losing crores to a broken claims process.
           </h1>
@@ -254,8 +228,8 @@ export default function Home() {
             />
           </div>
         </div>
-        <div className="relative hidden items-center justify-center overflow-hidden px-10 lg:flex">
-          <div className="relative w-full max-w-xl rotate-1">
+        <div className="relative hidden items-center justify-center overflow-hidden px-6 lg:flex xl:px-10">
+          <div className="relative w-full max-w-2xl rotate-1">
             <Image
               src="/dashboard-preview.png"
               alt="ClearCycle dashboard"
@@ -269,8 +243,8 @@ export default function Home() {
       </section>
 
       {/* Problem */}
-      <section id="problem" className="bg-white px-4 py-20 sm:px-6">
-        <div className="mx-auto max-w-6xl">
+      <section id="problem" className="bg-white px-4 py-20 sm:px-6 xl:px-10">
+        <div className="mx-auto max-w-7xl">
           <p className="text-xs font-semibold tracking-widest text-muted-foreground">
             THE PROBLEM
           </p>
@@ -292,15 +266,15 @@ export default function Home() {
       </section>
 
       {/* Solution */}
-      <section id="solution" className="bg-[#EAF2FF] px-4 py-20 sm:px-6">
-        <div className="mx-auto max-w-6xl">
+      <section id="solution" className="bg-[#EAF2FF] px-4 py-20 sm:px-6 xl:px-10">
+        <div className="mx-auto max-w-7xl">
           <p className="text-xs font-semibold tracking-widest text-muted-foreground">
             THE SOLUTION
           </p>
           <h2 className="mt-3 max-w-2xl text-2xl font-bold sm:text-3xl">
             One platform. The entire claim lifecycle.
           </h2>
-          <div className="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
             {solutions.map((item) => (
               <Card key={item.title} className="bg-white">
                 <CardContent className="flex flex-col gap-3">
@@ -315,8 +289,8 @@ export default function Home() {
       </section>
 
       {/* Payer Intelligence Deep-Dive */}
-      <section id="payer-intelligence" className="bg-[#0F1F3D] px-4 py-20 sm:px-6">
-        <div className="mx-auto max-w-6xl">
+      <section id="payer-intelligence" className="bg-[#0F1F3D] px-4 py-20 sm:px-6 xl:px-10">
+        <div className="mx-auto max-w-7xl">
           <p className="text-xs font-semibold tracking-widest text-[#1E6BFF]">
             ML PAYER INTELLIGENCE
           </p>
@@ -370,8 +344,8 @@ export default function Home() {
       </section>
 
       {/* Why Now */}
-      <section className="bg-white px-4 py-20 sm:px-6">
-        <div className="mx-auto max-w-6xl">
+      <section className="bg-white px-4 py-20 sm:px-6 xl:px-10">
+        <div className="mx-auto max-w-7xl">
           <p className="text-xs font-semibold tracking-widest text-muted-foreground">
             WHY NOW
           </p>
@@ -393,8 +367,8 @@ export default function Home() {
       </section>
 
       {/* ROI */}
-      <section id="impact" className="bg-[#0F1F3D] px-4 py-20 sm:px-6">
-        <div className="mx-auto max-w-4xl">
+      <section id="impact" className="bg-[#0F1F3D] px-4 py-20 sm:px-6 xl:px-10">
+        <div className="mx-auto max-w-5xl">
           <p className="text-xs font-semibold tracking-widest text-white/50">THE IMPACT</p>
           <h2 className="mt-3 max-w-2xl text-2xl font-bold text-white sm:text-3xl">
             What changes at a hospital billing ₹2 crore per month.
@@ -430,8 +404,8 @@ export default function Home() {
       </section>
 
       {/* Compliance */}
-      <section className="bg-white px-4 py-20 sm:px-6">
-        <div className="mx-auto max-w-4xl">
+      <section className="bg-white px-4 py-20 sm:px-6 xl:px-10">
+        <div className="mx-auto max-w-5xl">
           <p className="text-xs font-semibold tracking-widest text-muted-foreground">
             BUILT FOR INDIAN HEALTHCARE
           </p>

@@ -1,43 +1,104 @@
-"use client";
+"use client"
 
-import Link from "next/link";
-import { Logo } from "@/components/logo";
-import { Button } from "@/components/ui/button";
+import { useState } from "react"
+import Link from "next/link"
+import { Menu, X } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Logo } from "@/components/logo"
+
+const CONTACT_MAILTO = "mailto:gauravhira24@gmail.com"
+
+const navLinks = [
+  { href: "#solution", label: "Product" },
+  { href: "#payer-intelligence", label: "Payer Intelligence" },
+  { href: "#impact", label: "Impact" },
+  { href: "/blog", label: "Blog" },
+  { href: "/faq", label: "FAQ" },
+]
 
 export function MarketingNav() {
+  const [open, setOpen] = useState(false)
+
   return (
     <header className="sticky top-0 z-50 border-b bg-white">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
-        <Link href="/" aria-label="ClearCycle home">
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 xl:px-10">
+        <Link href="/" aria-label="ClearCycle home" onClick={() => setOpen(false)}>
           <Logo className="h-9 w-auto sm:h-10" />
         </Link>
-        <nav className="hidden items-center gap-6 text-sm font-medium text-muted-foreground sm:flex">
-          <Link href="/#solution" className="hover:text-foreground transition-colors">
-            Product
-          </Link>
-          <Link href="/#impact" className="hover:text-foreground transition-colors">
-            Impact
-          </Link>
-          <Link href="/blog" className="hover:text-foreground transition-colors">
-            Blog
-          </Link>
-          <Link href="/faq" className="hover:text-foreground transition-colors">
-            FAQ
-          </Link>
+
+        {/* Desktop nav — hidden below lg */}
+        <nav className="hidden items-center gap-6 text-sm font-medium text-muted-foreground lg:flex">
+          {navLinks.map((l) =>
+            l.href.startsWith("/") ? (
+              <Link key={l.label} href={l.href} className="transition-colors hover:text-foreground">
+                {l.label}
+              </Link>
+            ) : (
+              <a key={l.label} href={l.href} className="transition-colors hover:text-foreground">
+                {l.label}
+              </a>
+            )
+          )}
         </nav>
-        <div className="flex items-center gap-2 sm:gap-4">
+
+        <div className="flex items-center gap-2">
           <Button
             nativeButton={false}
-            render={<Link href="https://app.clearcycle.in/dashboard">Login</Link>}
+            render={<a href="https://app.clearcycle.in/dashboard">Login</a>}
             variant="ghost"
+            className="hidden sm:inline-flex"
           />
           <Button
             nativeButton={false}
-            render={<a href="mailto:gauravhira24@gmail.com">Contact Sales</a>}
+            render={<a href={CONTACT_MAILTO}>Contact Sales</a>}
             className="bg-[#1E6BFF] text-white hover:bg-[#1E6BFF]/90"
           />
+          {/* Hamburger — visible below lg */}
+          <button
+            className="ml-1 rounded-md p-2 text-muted-foreground transition-colors hover:bg-muted lg:hidden"
+            onClick={() => setOpen((v) => !v)}
+            aria-label={open ? "Close menu" : "Open menu"}
+          >
+            {open ? <X className="size-5" /> : <Menu className="size-5" />}
+          </button>
         </div>
       </div>
+
+      {/* Mobile drawer */}
+      {open && (
+        <div className="border-t bg-white lg:hidden">
+          <nav className="mx-auto flex max-w-7xl flex-col px-4 py-2 sm:px-6">
+            {navLinks.map((l) =>
+              l.href.startsWith("/") ? (
+                <Link
+                  key={l.label}
+                  href={l.href}
+                  className="border-b border-muted py-3 text-sm font-medium text-foreground last:border-0 hover:text-[#1E6BFF]"
+                  onClick={() => setOpen(false)}
+                >
+                  {l.label}
+                </Link>
+              ) : (
+                <a
+                  key={l.label}
+                  href={l.href}
+                  className="border-b border-muted py-3 text-sm font-medium text-foreground last:border-0 hover:text-[#1E6BFF]"
+                  onClick={() => setOpen(false)}
+                >
+                  {l.label}
+                </a>
+              )
+            )}
+            <a
+              href="https://app.clearcycle.in/dashboard"
+              className="py-3 text-sm font-medium text-muted-foreground hover:text-foreground sm:hidden"
+              onClick={() => setOpen(false)}
+            >
+              Login
+            </a>
+          </nav>
+        </div>
+      )}
     </header>
-  );
+  )
 }

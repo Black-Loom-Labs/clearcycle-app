@@ -3,8 +3,8 @@ import { Logo } from "@/components/logo";
 
 export function MarketingFooter() {
   return (
-    <footer className="bg-[#0F1F3D] px-4 py-10 sm:px-6">
-      <div className="mx-auto max-w-6xl">
+    <footer className="bg-[#0F1F3D] px-4 py-10 sm:px-6 xl:px-10">
+      <div className="mx-auto max-w-7xl">
         <div className="grid grid-cols-2 gap-8 sm:grid-cols-4">
           <div className="col-span-2 sm:col-span-1">
             <Logo className="h-8 w-auto" />
