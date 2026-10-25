@@ -728,16 +728,9 @@ export const api = {
     ),
   getPatientClaims: (id: string) => apiFetch<PatientClaimsResponse>(`/patients/${id}/claims`),
   preCheck: (body: { payer_id: string; claim_lines: PreCheckLineInput[] }) =>
-    fetch('/api/pre-check', {
+    apiFetch<PreCheckResponse>('/claims/pre-check', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
-    }).then(async (res) => {
-      if (!res.ok) {
-        const detail = await res.json().then((d: { detail?: string }) => d.detail).catch(() => `HTTP ${res.status}`)
-        throw new ApiError(detail ?? `HTTP ${res.status}`, res.status)
-      }
-      return res.json() as Promise<PreCheckResponse>
     }),
   runPreEncounterCheck: (body: {
     hospital_id: string
