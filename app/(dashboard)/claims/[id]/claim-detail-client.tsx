@@ -50,6 +50,8 @@ import {
   type PreEncounterResult,
   type FinancialSplit,
   type PayerPersonaScrubResult,
+  type PreCheckResponse,
+  type PreCheckLineInput,
   type Doctor,
   type WorkflowResult,
   type WorkflowBillingEdit,
@@ -157,7 +159,7 @@ export function ClaimDetailClient({ claimId }: { claimId: string }) {
   const carrierId = claim?.payer_id ?? adjudication?.carrier_id ?? null
   const icdCodes = coding?.result?.diagnoses?.map((d) => d.code) ?? []
   const cptCodes = coding?.result?.procedures?.map((p) => p.code) ?? []
-  const showRiskCheck = claim?.status === 'ready' || claim?.status === 'submitted'
+  const showRiskCheck = !!carrierId && !!coding
   const status = adjudication?.status ?? 'pending'
   const readiness = coding?.result?.overall_confidence
     ? Math.round(coding.result.overall_confidence * 100)
@@ -345,7 +347,7 @@ export function ClaimDetailClient({ claimId }: { claimId: string }) {
 
       <Separator />
 
-      {/* Pre-Submission Risk Check */}
+      {/* Pre-Submission Risk Check (rule-based) */}
       {showRiskCheck && (
         <>
           <PayerPersonaRiskCard
@@ -353,6 +355,18 @@ export function ClaimDetailClient({ claimId }: { claimId: string }) {
             carrierId={carrierId}
             icdCodes={icdCodes}
             cptCodes={cptCodes}
+          />
+          <Separator />
+        </>
+      )}
+
+      {/* ML Payer Intelligence Pre-Check */}
+      {showRiskCheck && carrierId && coding && (
+        <>
+          <PreCheckMLPanel
+            claim={claim}
+            carrierId={carrierId}
+            coding={coding}
           />
           <Separator />
         </>
@@ -1350,6 +1364,225 @@ function InitiateApprovalDialog({
         </div>
       </DialogContent>
     </Dialog>
+  )
+}
+
+// Infer a broad revenue category from a CPT/HCPCS code for the ML model.
+function inferRevenueCategory(code: string): string {
+  if (!code) return 'procedure'
+  const c = code.toUpperCase()
+  if (c.startsWith('J') || c.startsWith('Q') || c.startsWith('K')) return 'drug'
+  if (c.startsWith('A')) return 'consumable'
+  if (c.startsWith('E')) return 'dme'
+  if (c.startsWith('L')) return 'prosthetic'
+  return 'procedure'
+}
+
+function buildPreCheckLines(
+  coding: CodingResult,
+  totalCharges: number | null
+): PreCheckLineInput[] {
+  const procs = coding.result.procedures
+  if (procs.length === 0) return []
+  const perLine = totalCharges && totalCharges > 0 ? totalCharges / procs.length : 5000
+  const icdCodes = coding.result.diagnoses.map((d) => d.code)
+  return procs.map((p, i) => ({
+    line_id: `L${i + 1}`,
+    procedure_code: p.code,
+    diagnosis_codes: icdCodes.slice(0, 3),
+    revenue_category: inferRevenueCategory(p.code),
+    line_amount: Math.round(perLine),
+    pre_auth_present: false,
+  }))
+}
+
+const RISK_COLORS = {
+  high: { bg: 'bg-[#FEE2E2]', text: 'text-[#DC2626]', bar: '#DC2626', label: 'HIGH' },
+  medium: { bg: 'bg-[#FEF3C7]', text: 'text-[#D97706]', bar: '#D97706', label: 'MED' },
+  low: { bg: 'bg-[#DCFCE7]', text: 'text-[#16A34A]', bar: '#16A34A', label: 'LOW' },
+} as const
+
+function PreCheckMLPanel({
+  claim,
+  carrierId,
+  coding,
+}: {
+  claim: Claim | null
+  carrierId: string
+  coding: CodingResult
+}) {
+  const [result, setResult] = React.useState<PreCheckResponse | null>(null)
+  const [loading, setLoading] = React.useState(false)
+  const [ran, setRan] = React.useState(false)
+  const [error, setError] = React.useState<string | null>(null)
+
+  const lines = React.useMemo(
+    () => buildPreCheckLines(coding, claim?.total_charges ?? null),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [coding.claim_id, claim?.total_charges]
+  )
+
+  async function runCheck() {
+    if (lines.length === 0) return
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await api.preCheck({ payer_id: carrierId, claim_lines: lines })
+      setResult(res)
+      setRan(true)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Pre-check failed')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const s = result?.summary
+
+  return (
+    <section className="flex flex-col gap-3">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <h2 className="text-base font-semibold text-[#0A0A0F]">ML Deduction Forecast</h2>
+          <Badge className="bg-[#EAF2FF] text-[#1E6BFF]">Payer Intelligence</Badge>
+        </div>
+        {!ran && (
+          <Button size="sm" onClick={runCheck} disabled={loading || lines.length === 0} className="bg-[#1E6BFF] hover:bg-[#1E6BFF]/90">
+            {loading ? <Loader2 className="size-3.5 animate-spin" /> : null}
+            {loading ? 'Analysing…' : 'Run Pre-Check'}
+          </Button>
+        )}
+        {ran && (
+          <Button size="sm" variant="outline" onClick={runCheck} disabled={loading}>
+            {loading ? <Loader2 className="size-3.5 animate-spin" /> : <RefreshCw className="size-3.5" />}
+            Refresh
+          </Button>
+        )}
+      </div>
+
+      {!ran && !loading && (
+        <p className="text-sm text-[#5C5C6B]">
+          Score each claim line against the payer&apos;s deduction history before submission.
+          {lines.length > 0
+            ? ` ${lines.length} line${lines.length > 1 ? 's' : ''} ready to check.`
+            : ' No coded procedures available yet.'}
+        </p>
+      )}
+
+      {loading && <Skeleton className="h-40 rounded-lg" />}
+
+      {error && <ErrorState message={error} />}
+
+      {ran && result && s && (
+        <div className="flex flex-col gap-4">
+          {/* Summary bar */}
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <StatBox label="Total Billed" value={formatINRFull(s.total_billed_amount)} />
+            <StatBox
+              label="Expected Deduction"
+              value={formatINRFull(s.total_expected_deduction)}
+              valueClass="text-[#DC2626]"
+            />
+            <StatBox
+              label="Expected Collection"
+              value={`${Math.round(s.expected_collection_rate * 100)}%`}
+              valueClass={s.expected_collection_rate >= 0.8 ? 'text-[#16A34A]' : s.expected_collection_rate >= 0.6 ? 'text-[#D97706]' : 'text-[#DC2626]'}
+            />
+            <div className="flex flex-col gap-0.5">
+              <span className="text-xs text-[#5C5C6B]">Risk Breakdown</span>
+              <div className="flex items-center gap-1.5 text-sm font-semibold">
+                {s.high_risk_lines > 0 && (
+                  <span className="rounded-full bg-[#FEE2E2] px-2 py-0.5 text-xs text-[#DC2626]">
+                    {s.high_risk_lines}H
+                  </span>
+                )}
+                {s.medium_risk_lines > 0 && (
+                  <span className="rounded-full bg-[#FEF3C7] px-2 py-0.5 text-xs text-[#D97706]">
+                    {s.medium_risk_lines}M
+                  </span>
+                )}
+                {s.low_risk_lines > 0 && (
+                  <span className="rounded-full bg-[#DCFCE7] px-2 py-0.5 text-xs text-[#16A34A]">
+                    {s.low_risk_lines}L
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {!s.payer_history_available && (
+            <p className="rounded-lg bg-[#F7F8FA] px-3 py-2 text-xs text-[#5C5C6B]">
+              No live payer history — predictions from pre-trained model only. Accuracy improves after first few claims with this payer.
+            </p>
+          )}
+
+          {/* Per-line table */}
+          <div className="overflow-x-auto rounded-lg border border-[#E4E4EF] bg-white">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Procedure</TableHead>
+                  <TableHead>Category</TableHead>
+                  <TableHead>Deduction Risk</TableHead>
+                  <TableHead>Expected Deduction</TableHead>
+                  <TableHead>Top Reason</TableHead>
+                  <TableHead>Action</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {result.lines.map((line, i) => {
+                  const colors = RISK_COLORS[line.risk_level] ?? RISK_COLORS.low
+                  const inputLine = lines[i]
+                  return (
+                    <TableRow key={line.line_id} className={line.risk_level === 'high' ? 'bg-[#FFF8F8]' : undefined}>
+                      <TableCell>
+                        <span className="font-mono text-sm font-bold">{inputLine?.procedure_code ?? line.line_id}</span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-xs capitalize text-[#5C5C6B]">{inputLine?.revenue_category ?? '—'}</span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <span className={cn('rounded-full px-2 py-0.5 text-xs font-bold', colors.bg, colors.text)}>
+                            {colors.label}
+                          </span>
+                          <div className="flex items-center gap-1.5">
+                            <div className="h-1.5 w-20 overflow-hidden rounded-full bg-[#E4E4EF]">
+                              <div
+                                className="h-full rounded-full"
+                                style={{ width: `${Math.round(line.deduction_probability * 100)}%`, backgroundColor: colors.bar }}
+                              />
+                            </div>
+                            <span className="text-xs text-[#5C5C6B]">
+                              {Math.round(line.deduction_probability * 100)}%
+                            </span>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <span className={cn('text-sm font-medium', line.risk_level === 'high' ? 'text-[#DC2626]' : line.risk_level === 'medium' ? 'text-[#D97706]' : 'text-[#16A34A]')}>
+                          {formatINRFull(line.expected_deduction_amount)}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-xs text-[#5C5C6B]">{line.top_reasons[0] ?? '—'}</span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-xs text-[#0A0A0F]">{line.suggested_action}</span>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
+              </TableBody>
+            </Table>
+          </div>
+
+          <p className="text-xs text-[#5C5C6B]">
+            Model: {result.model_version} · Amounts are estimated from total charges ÷ procedure count.
+          </p>
+        </div>
+      )}
+    </section>
   )
 }
 

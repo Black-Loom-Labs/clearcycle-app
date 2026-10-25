@@ -511,6 +511,45 @@ export interface PayerRiskScore {
   avg_deduction_pct?: number
 }
 
+// ---- Pre-Check ML types ----
+
+export interface PreCheckLineInput {
+  line_id: string
+  procedure_code: string
+  diagnosis_codes: string[]
+  revenue_category: string
+  line_amount: number
+  pre_auth_present: boolean
+}
+
+export interface PreCheckLineResult {
+  line_id: string
+  deduction_probability: number
+  expected_deduction_amount: number
+  risk_level: 'low' | 'medium' | 'high'
+  top_reasons: string[]
+  suggested_action: string
+}
+
+export interface PreCheckSummary {
+  total_lines: number
+  high_risk_lines: number
+  medium_risk_lines: number
+  low_risk_lines: number
+  total_billed_amount: number
+  total_expected_deduction: number
+  expected_collection_rate: number
+  payer_history_available: boolean
+}
+
+export interface PreCheckResponse {
+  hospital_id: string
+  payer_id: string
+  model_version: string
+  lines: PreCheckLineResult[]
+  summary: PreCheckSummary
+}
+
 export const api = {
   getARDashboard: (hospitalId: string) =>
     apiFetch<ARDashboardResponse>(`/ar/dashboard?hospital_id=${hospitalId}`),
@@ -688,6 +727,18 @@ export const api = {
       normalizePatient
     ),
   getPatientClaims: (id: string) => apiFetch<PatientClaimsResponse>(`/patients/${id}/claims`),
+  preCheck: (body: { payer_id: string; claim_lines: PreCheckLineInput[] }) =>
+    fetch('/api/pre-check', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    }).then(async (res) => {
+      if (!res.ok) {
+        const detail = await res.json().then((d: { detail?: string }) => d.detail).catch(() => `HTTP ${res.status}`)
+        throw new ApiError(detail ?? `HTTP ${res.status}`, res.status)
+      }
+      return res.json() as Promise<PreCheckResponse>
+    }),
   runPreEncounterCheck: (body: {
     hospital_id: string
     patient_id: string
