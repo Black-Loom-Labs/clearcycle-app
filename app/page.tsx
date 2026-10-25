@@ -21,6 +21,9 @@ import {
   ShieldAlert,
   PieChart,
   CheckCircle2,
+  ScanLine,
+  LineChart,
+  Target,
 } from "lucide-react"
 
 export const metadata: Metadata = {
@@ -64,7 +67,7 @@ const softwareSchema = {
   featureList: [
     "AI Medical Coding (ICD-10, CPT)",
     "Policy Adjudication",
-    "Payer Intelligence — 42 TPA profiles",
+    "ML Payer Intelligence — per-line deduction probability scoring",
     "Autonomous TPA Submission",
     "IRDAI-Compliant Appeal Letters",
     "NHCX FHIR R4 Bundle Generation",
@@ -117,9 +120,9 @@ const solutions = [
   },
   {
     icon: BarChart2,
-    title: "Payer Intelligence",
+    title: "ML Payer Intelligence",
     description:
-      "42 behavioral profiles across 5 major TPAs. Flags high-rejection patterns before submission. Gets smarter with every claim.",
+      "Per-line deduction probability scoring before you submit. LightGBM model trained on carrier rejection history. Flags high-risk lines with the exact reason and suggested fix.",
   },
   {
     icon: GitBranch,
@@ -204,6 +207,7 @@ export default function Home() {
           </Link>
           <nav className="hidden items-center gap-6 text-sm font-medium text-muted-foreground sm:flex">
             <a href="#solution" className="hover:text-foreground transition-colors">Product</a>
+            <a href="#payer-intelligence" className="hover:text-foreground transition-colors">Payer Intelligence</a>
             <a href="#impact" className="hover:text-foreground transition-colors">Impact</a>
             <Link href="/blog" className="hover:text-foreground transition-colors">Blog</Link>
             <Link href="/faq" className="hover:text-foreground transition-colors">FAQ</Link>
@@ -231,7 +235,8 @@ export default function Home() {
           </h1>
           <p className="mt-6 max-w-xl text-base text-white/60 sm:text-lg">
             ClearCycle automates the entire claim lifecycle — from discharge summary to TPA
-            settlement.
+            settlement. ML payer intelligence scores every line for deduction risk before you
+            submit.
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <Button
@@ -305,6 +310,61 @@ export default function Home() {
                 </CardContent>
               </Card>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Payer Intelligence Deep-Dive */}
+      <section id="payer-intelligence" className="bg-[#0F1F3D] px-4 py-20 sm:px-6">
+        <div className="mx-auto max-w-6xl">
+          <p className="text-xs font-semibold tracking-widest text-[#1E6BFF]">
+            ML PAYER INTELLIGENCE
+          </p>
+          <h2 className="mt-3 max-w-2xl text-2xl font-bold text-white sm:text-3xl">
+            Know your deduction risk before you hit submit.
+          </h2>
+          <p className="mt-4 max-w-2xl text-base text-white/60">
+            Our LightGBM model learns carrier-specific rejection patterns from your hospital&apos;s
+            own remittance history. Every claim line gets a deduction probability score, a predicted
+            amount, and a suggested action — before you submit to the TPA.
+          </p>
+          <div className="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-3">
+            <div className="rounded-xl border border-white/10 bg-white/5 p-6">
+              <ScanLine className="size-8 text-[#1E6BFF]" />
+              <h3 className="mt-3 font-semibold text-white">Pre-Submission Risk Score</h3>
+              <p className="mt-2 text-sm text-white/60">
+                Each procedure line gets a deduction probability (0–100%) and risk tier —
+                High, Medium, or Low — based on your payer&apos;s historical behaviour on that CPT/ICD
+                combination.
+              </p>
+            </div>
+            <div className="rounded-xl border border-white/10 bg-white/5 p-6">
+              <LineChart className="size-8 text-[#1E6BFF]" />
+              <h3 className="mt-3 font-semibold text-white">Expected Deduction Forecast</h3>
+              <p className="mt-2 text-sm text-white/60">
+                Know the rupee impact before settlement. Per-line expected deduction and total
+                collection rate help your billing team prioritise which claims to review before
+                submission.
+              </p>
+            </div>
+            <div className="rounded-xl border border-white/10 bg-white/5 p-6">
+              <Target className="size-8 text-[#1E6BFF]" />
+              <h3 className="mt-3 font-semibold text-white">Gets Smarter Over Time</h3>
+              <p className="mt-2 text-sm text-white/60">
+                The model fine-tunes on your hospital&apos;s actual remittance data — so predictions
+                improve as your claim history grows. Carrier profiles cover Star Health, ICICI
+                Lombard, SBI General, Bajaj Allianz, Tata AIG, and Medi Assist.
+              </p>
+            </div>
+          </div>
+          <div className="mt-8 rounded-xl border border-[#1E6BFF]/30 bg-[#1E6BFF]/10 px-6 py-5">
+            <p className="text-sm text-white/80">
+              <span className="font-semibold text-white">How it works: </span>
+              Upload your discharge summary → AI codes the claim → Payer Intelligence scores every
+              line → High-risk lines flagged with exact reason (e.g. &quot;Star Health rejects
+              implant-only CPT without attached invoice&quot;) → Billing team corrects before submission
+              → First-pass acceptance rate improves from ~68% to ~88%.
+            </p>
           </div>
         </div>
       </section>
