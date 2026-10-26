@@ -77,7 +77,7 @@ const softwareSchema = {
   ],
 }
 
-const CONTACT_MAILTO = "mailto:gauravhira24@gmail.com"
+const CONTACT_HREF = "/contact"
 
 const problems = [
   {
@@ -216,7 +216,7 @@ export default function Home() {
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <Button
               nativeButton={false}
-              render={<a href={CONTACT_MAILTO}>Contact Sales</a>}
+              render={<a href={CONTACT_HREF}>Contact Sales</a>}
               size="lg"
               className="bg-[#1E6BFF] text-white hover:bg-[#1E6BFF]/90"
             />
@@ -437,12 +437,14 @@ export default function Home() {
           </p>
           <Button
             nativeButton={false}
-            render={<a href={CONTACT_MAILTO}>Contact Sales</a>}
+            render={<a href={CONTACT_HREF}>Contact Sales</a>}
             size="lg"
             className="mt-8 bg-white text-[#0F1F3D] hover:bg-white/90"
           />
           <p className="mt-5 text-sm text-white/60">
-            gauravhira24@gmail.com · +91 91632 36777
+            <a href="tel:+919163236777" className="hover:text-white/80 transition-colors">+91 91632 36777</a>
+            {" "}·{" "}
+            <a href="mailto:gaurav@gauravhira.dev" className="hover:text-white/80 transition-colors">gaurav@gauravhira.dev</a>
           </p>
         </div>
       </section>

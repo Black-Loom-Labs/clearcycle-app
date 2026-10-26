@@ -6,7 +6,7 @@ import { Menu, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Logo } from "@/components/logo"
 
-const CONTACT_MAILTO = "mailto:gauravhira24@gmail.com"
+const CONTACT_HREF = "/contact"
 
 const navLinks = [
   { href: "#solution", label: "Product" },
@@ -51,7 +51,7 @@ export function MarketingNav() {
           />
           <Button
             nativeButton={false}
-            render={<a href={CONTACT_MAILTO}>Contact Sales</a>}
+            render={<a href={CONTACT_HREF}>Contact Sales</a>}
             className="bg-[#1E6BFF] text-white hover:bg-[#1E6BFF]/90"
           />
           {/* Hamburger — visible below lg */}

@@ -77,8 +77,8 @@ export function MarketingFooter() {
         <div className="mt-8 flex flex-col items-center justify-between gap-3 border-t border-white/10 pt-8 sm:flex-row">
           <p className="text-sm text-white/40">© 2026 ClearCycle. All rights reserved. · clearcycle.in</p>
           <p className="text-sm text-white/40">
-            <a href="mailto:gauravhira24@gmail.com" className="hover:text-white/70 transition-colors">
-              gauravhira24@gmail.com
+            <a href="mailto:gaurav@gauravhira.dev" className="hover:text-white/70 transition-colors">
+              gaurav@gauravhira.dev
             </a>{" "}
             · +91 91632 36777
           </p>
