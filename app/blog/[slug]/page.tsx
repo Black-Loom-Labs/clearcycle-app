@@ -86,7 +86,7 @@ export default async function BlogPost({ params }: Props) {
               3-month free pilot. Full pipeline live within 2 weeks. No commitment.
             </p>
             <a
-              href="mailto:gauravhira24@gmail.com"
+              href="/contact"
               className="mt-6 inline-flex h-10 items-center justify-center rounded-md bg-[#1E6BFF] px-6 text-sm font-medium text-white hover:bg-[#1E6BFF]/90 transition-colors"
             >
               Contact Sales

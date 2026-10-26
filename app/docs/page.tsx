@@ -285,7 +285,7 @@ export default function DocsPage() {
                   API credentials are provisioned during onboarding.
                 </p>
                 <a
-                  href="mailto:gauravhira24@gmail.com"
+                  href="/contact"
                   className="mt-3 block text-xs font-medium text-[#1E6BFF] hover:underline"
                 >
                   Contact us →
@@ -606,7 +606,7 @@ export default function DocsPage() {
                     you.
                   </p>
                   <a
-                    href="mailto:gauravhira24@gmail.com"
+                    href="/contact"
                     className="mt-3 inline-block text-sm font-medium text-[#1E6BFF] hover:underline"
                   >
                     Book an integration call →

@@ -145,10 +145,10 @@ export default function FAQPage() {
             <p className="mt-4 text-base text-white/60">
               Can&apos;t find your answer?{" "}
               <a
-                href="mailto:gauravhira24@gmail.com"
+                href="/contact"
                 className="underline text-white/80 hover:text-white"
               >
-                Email us directly.
+                Get in touch.
               </a>
             </p>
           </div>
@@ -190,7 +190,7 @@ export default function FAQPage() {
               your hospital&apos;s payer mix and claim volume.
             </p>
             <a
-              href="mailto:gauravhira24@gmail.com"
+              href="/contact"
               className="mt-6 inline-flex h-10 items-center justify-center rounded-md bg-[#1E6BFF] px-6 text-sm font-medium text-white hover:bg-[#1E6BFF]/90 transition-colors"
             >
               Contact Sales
