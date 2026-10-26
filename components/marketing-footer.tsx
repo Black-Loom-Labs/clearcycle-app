@@ -40,6 +40,11 @@ export function MarketingFooter() {
             </p>
             <ul className="mt-3 space-y-2 text-sm text-white/60">
               <li>
+                <Link href="/docs" className="hover:text-white transition-colors">
+                  API Docs
+                </Link>
+              </li>
+              <li>
                 <Link href="/blog" className="hover:text-white transition-colors">
                   Blog
                 </Link>

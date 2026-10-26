@@ -12,6 +12,7 @@ const navLinks = [
   { href: "#solution", label: "Product" },
   { href: "#payer-intelligence", label: "Payer Intelligence" },
   { href: "#impact", label: "Impact" },
+  { href: "/docs", label: "Developers" },
   { href: "/blog", label: "Blog" },
   { href: "/faq", label: "FAQ" },
 ]
