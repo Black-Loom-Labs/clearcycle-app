@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { MarketingFooter } from "@/components/marketing-footer"
 import { MarketingNav } from "@/components/marketing-nav"
+import { PreCheckDemo } from "@/components/pre-check-demo"
 import {
   TrendingDown,
   Clock,
@@ -340,6 +341,7 @@ export default function Home() {
               → First-pass acceptance rate improves from ~68% to ~88%.
             </p>
           </div>
+          <PreCheckDemo />
         </div>
       </section>
 
