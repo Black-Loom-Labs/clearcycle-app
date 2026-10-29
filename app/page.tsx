@@ -88,7 +88,7 @@ const solutions = [
   },
   {
     icon: BarChart2,
-    title: "ML Payer Intelligence",
+    title: "Payer Intelligence",
     description:
       "Per-line deduction probability scoring before you submit. Flags high-risk lines with the exact reason and fix.",
   },
@@ -125,7 +125,7 @@ const compliance = [
   "7-year claim audit trail per IRDAI guidelines",
   "ICD-10-CM with CCI edits and MUE validation built in",
   "NHCX-ready FHIR R4 claim bundle generation",
-  "AWS ap-south-1: patient data never leaves India",
+  "Patient data processed and stored in India only - never leaves the country",
   "Doctor OTP sign-off: medicolegally defensible record",
 ]
 
@@ -148,7 +148,7 @@ export default function Home() {
           <div className="grid grid-cols-1 gap-12 lg:grid-cols-2 lg:items-center">
             <div className="pb-12 lg:pb-20">
               <span className="inline-flex items-center rounded-full border border-[#1E6BFF]/20 bg-[#EEF4FF] px-3 py-1 text-xs font-semibold text-[#1E6BFF]">
-                ML Payer Intelligence
+                Payer Intelligence
               </span>
               <h1 className="mt-5 text-4xl font-bold leading-tight text-[#0F1F3D] sm:text-5xl lg:text-[3.25rem]">
                 Your hospital is owed money it will never collect.
@@ -180,10 +180,10 @@ export default function Home() {
 
             {/* Right: payer intelligence demo clipped at bottom */}
             <div
-              className="relative hidden overflow-hidden rounded-t-2xl border border-[#E8E4D8] bg-white shadow-lg lg:block"
+              className="relative hidden overflow-hidden rounded-t-2xl border border-[#E8E4D8] bg-[#FAFAF8] shadow-lg lg:block"
               style={{ maskImage: "linear-gradient(to bottom, black 65%, transparent 100%)" }}
             >
-              <div className="flex items-center gap-1.5 border-b border-[#F0EDE6] bg-[#FAFAF8] px-4 py-2.5">
+              <div className="flex items-center gap-1.5 border-b border-[#EAE6DE] bg-white px-4 py-2.5">
                 <span className="size-2.5 rounded-full bg-[#E8E4D8]" />
                 <span className="size-2.5 rounded-full bg-[#E8E4D8]" />
                 <span className="size-2.5 rounded-full bg-[#E8E4D8]" />
@@ -269,10 +269,10 @@ export default function Home() {
             How it works
           </p>
           <h2 className="mt-3 max-w-2xl text-2xl font-bold text-[#0F1F3D] sm:text-3xl">
-            From discharge summary to settlement.
+            From admission to settlement - nothing falls through.
           </h2>
           <p className="mt-3 max-w-xl text-sm text-[#8A8070]">
-            Every step automated, every decision auditable, every claim tracked.
+            Every step in the claim journey automated, every decision auditable, every rupee tracked.
           </p>
           <div className="mt-10">
             <WorkflowDiagram />
@@ -284,19 +284,19 @@ export default function Home() {
       <section id="payer-intelligence" className="bg-white px-4 py-20 sm:px-6 xl:px-10">
         <div className="mx-auto max-w-7xl">
           <span className="inline-flex items-center rounded-full border border-[#1E6BFF]/20 bg-[#EEF4FF] px-3 py-1 text-xs font-semibold text-[#1E6BFF]">
-            ML Payer Intelligence
+            Payer Intelligence
           </span>
           <div className="mt-4 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <h2 className="max-w-xl text-2xl font-bold text-[#0F1F3D] sm:text-3xl">
               We know what Star Health will cut before you submit.
             </h2>
             <p className="max-w-md text-sm text-[#8A8070] lg:text-right">
-              LightGBM model trained on carrier rejection history. Every claim line gets a
-              deduction probability, a predicted rupee amount, and a fix.
+              Trained on carrier rejection history across 42 payer profiles. Every claim line gets
+              a deduction probability, a predicted rupee amount, and a fix.
             </p>
           </div>
 
-          <div className="mt-10 rounded-2xl border border-[#EAE6DE] bg-[#FEFCF8] p-4 sm:p-6">
+          <div className="mt-10 overflow-hidden rounded-2xl border border-[#EAE6DE] bg-[#FAFAF8]">
             <PreCheckDemo />
           </div>
 
