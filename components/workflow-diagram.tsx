@@ -92,7 +92,7 @@ export function WorkflowDiagram() {
   const activeDocs = STAGES[active].docs
 
   return (
-    <div className="w-full overflow-x-auto">
+    <div className="w-full overflow-x-auto overflow-y-hidden">
       <style>{`
         @keyframes arrow-pulse {
           0%   { transform: translateX(-120%) translateY(-50%); opacity: 0; }
@@ -137,17 +137,15 @@ export function WorkflowDiagram() {
                   <p className="mt-1 text-xs leading-tight text-[#B0A898]">{stage.sub}</p>
                 </div>
 
-                {/* Drop-line connector to doc panel */}
-                {isActive && (
-                  <div className="flex justify-center">
-                    <div className="h-4 w-px bg-[#E0DAD0]" />
-                  </div>
-                )}
+                {/* Drop-line — always rendered to keep row height stable */}
+                <div className={`flex justify-center transition-opacity duration-300 ${isActive ? "opacity-100" : "opacity-0"}`}>
+                  <div className="h-4 w-px bg-[#E0DAD0]" />
+                </div>
               </div>
 
               {/* Arrow connector */}
               {i < STAGES.length - 1 && (
-                <div className="relative flex w-8 shrink-0 items-center">
+                <div className="relative flex w-8 shrink-0 items-center overflow-hidden">
                   <div className="h-px w-full bg-[#E8E4D8]" />
                   <svg
                     className="absolute -right-px shrink-0"
