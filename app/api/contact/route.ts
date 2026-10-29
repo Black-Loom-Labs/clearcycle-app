@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { Resend } from "resend"
 
-const TO = "gaurav@gauravhira.dev"
+const TO = "hello@clearcycle.in"
 const CC = "gauravhira24@gmail.com"
 const FROM = "ClearCycle <hello@clearcycle.in>"
 
