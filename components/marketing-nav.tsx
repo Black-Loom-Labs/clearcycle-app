@@ -26,7 +26,7 @@ export function MarketingNav() {
         Limited slots open: free TPA leakage audit for hospitals joining the pilot.{" "}
         <a href="#audit" className="font-semibold text-[#1E6BFF] hover:underline">Claim yours →</a>
       </div>
-    <header className="sticky top-0 z-50 border-b bg-white">
+    <header className="sticky top-0 z-50 border-b border-[#E8E4D8] bg-[#FEFCF8]">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 xl:px-10">
         <Link href="/" aria-label="ClearCycle home" onClick={() => setOpen(false)}>
           <Logo className="h-9 w-auto sm:h-10" />
@@ -72,7 +72,7 @@ export function MarketingNav() {
 
       {/* Mobile drawer */}
       {open && (
-        <div className="border-t bg-white lg:hidden">
+        <div className="border-t border-[#E8E4D8] bg-[#FEFCF8] lg:hidden">
           <nav className="mx-auto flex max-w-7xl flex-col px-4 py-2 sm:px-6">
             {navLinks.map((l) =>
               l.href.startsWith("/") ? (

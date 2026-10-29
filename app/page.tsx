@@ -5,6 +5,7 @@ import { MarketingFooter } from "@/components/marketing-footer"
 import { MarketingNav } from "@/components/marketing-nav"
 import { PreCheckDemo } from "@/components/pre-check-demo"
 import { AuditForm } from "@/components/audit-form"
+import { PayerLogoChip } from "@/components/payer-logo-chip"
 import {
   Brain,
   FileCheck,
@@ -67,14 +68,14 @@ const softwareSchema = {
 }
 
 const PAYERS = [
-  "Star Health",
-  "ICICI Lombard",
-  "SBI General",
-  "HDFC Ergo",
-  "New India Assurance",
-  "United Health Insurance",
-  "Bajaj Allianz",
-  "Medi Assist",
+  { name: "Star Health", domain: "starhealth.in" },
+  { name: "ICICI Lombard", domain: "icicilombard.com" },
+  { name: "SBI General", domain: "sbigeneral.in" },
+  { name: "HDFC Ergo", domain: "hdfcergo.com" },
+  { name: "New India Assurance", domain: "newindia.co.in" },
+  { name: "United India Insurance", domain: "unitedindiainsurance.co.in" },
+  { name: "Bajaj Allianz", domain: "bajajallianz.com" },
+  { name: "Medi Assist", domain: "mediassistindia.com" },
 ]
 
 const impacts = [
@@ -224,26 +225,21 @@ export default function Home() {
       </section>
 
       {/* Payer logos strip */}
-      <section className="border-y bg-[#F7F8FA] px-4 py-6 sm:px-6">
+      <section className="border-y border-[#E8E4D8] bg-[#FAF7F2] px-4 py-7 sm:px-6">
         <div className="mx-auto max-w-7xl">
-          <p className="mb-4 text-center text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+          <p className="mb-5 text-center text-xs font-semibold uppercase tracking-widest text-[#A09888]">
             42 behavioural profiles mapped across major Indian TPAs
           </p>
           <div className="flex flex-wrap items-center justify-center gap-3">
             {PAYERS.map((p) => (
-              <span
-                key={p}
-                className="rounded-full border border-border bg-white px-4 py-1.5 text-xs font-medium text-muted-foreground"
-              >
-                {p}
-              </span>
+              <PayerLogoChip key={p.name} name={p.name} domain={p.domain} />
             ))}
           </div>
         </div>
       </section>
 
       {/* Impact numbers */}
-      <section className="bg-white px-4 py-16 sm:px-6 xl:px-10">
+      <section className="bg-[#FEFCF8] px-4 py-16 sm:px-6 xl:px-10">
         <div className="mx-auto max-w-5xl">
           <div className="grid grid-cols-1 divide-y sm:grid-cols-3 sm:divide-x sm:divide-y-0">
             {impacts.map((item) => (
@@ -257,7 +253,7 @@ export default function Home() {
       </section>
 
       {/* Problem */}
-      <section className="bg-[#F7F8FA] px-4 py-20 sm:px-6 xl:px-10">
+      <section className="bg-[#F4F0E8] px-4 py-20 sm:px-6 xl:px-10">
         <div className="mx-auto max-w-7xl">
           <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
             The problem
@@ -344,7 +340,7 @@ export default function Home() {
       </section>
 
       {/* How the audit works */}
-      <section className="bg-white px-4 py-20 sm:px-6 xl:px-10">
+      <section className="bg-[#FEFCF8] px-4 py-20 sm:px-6 xl:px-10">
         <div className="mx-auto max-w-5xl">
           <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
             How it starts
@@ -355,7 +351,7 @@ export default function Home() {
           <div className="mt-12 grid grid-cols-1 gap-8 sm:grid-cols-3">
             {steps.map((s) => (
               <div key={s.n} className="flex flex-col gap-3">
-                <p className="text-4xl font-bold text-[#EAF2FF]">{s.n}</p>
+                <p className="text-4xl font-bold text-[#E8E0D0]">{s.n}</p>
                 <h3 className="font-semibold">{s.title}</h3>
                 <p className="text-sm text-muted-foreground">{s.body}</p>
               </div>
@@ -365,7 +361,7 @@ export default function Home() {
       </section>
 
       {/* Full platform */}
-      <section id="solution" className="bg-[#F7F8FA] px-4 py-20 sm:px-6 xl:px-10">
+      <section id="solution" className="bg-[#F4F0E8] px-4 py-20 sm:px-6 xl:px-10">
         <div className="mx-auto max-w-7xl">
           <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
             The platform
@@ -423,7 +419,7 @@ export default function Home() {
       </section>
 
       {/* Compliance */}
-      <section className="bg-white px-4 py-20 sm:px-6 xl:px-10">
+      <section className="bg-[#FEFCF8] px-4 py-20 sm:px-6 xl:px-10">
         <div className="mx-auto max-w-5xl">
           <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
             Built for Indian healthcare
