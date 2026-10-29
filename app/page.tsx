@@ -70,7 +70,7 @@ const PAYERS = [
 
 const impacts = [
   { stat: "₹8,000 Cr", label: "lost by Indian hospitals to TPA denials every year" },
-  { stat: "34%", label: "of Star Health ortho claims rejected without implant invoice" },
+  { stat: "34%", label: "of ortho claims rejected for missing implant documentation" },
   { stat: "₹20-36L", label: "recovered per month by hospitals on ClearCycle" },
 ]
 
@@ -287,7 +287,7 @@ export default function Home() {
           </span>
           <div className="mt-4 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <h2 className="max-w-xl text-2xl font-bold text-[#0F1F3D] sm:text-3xl">
-              ClearCheck knows what Star Health will cut before you submit.
+              Know exactly which claim lines will be cut before you submit.
             </h2>
             <p className="max-w-md text-sm text-[#8A8070] lg:text-right">
               Trained on carrier rejection history across 42 payer profiles. Every claim line gets
