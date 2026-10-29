@@ -16,6 +16,10 @@ import {
   MessageSquare,
   CheckCircle2,
   ArrowRight,
+  Lock,
+  ScrollText,
+  UserCheck,
+  ShieldCheck,
 } from "lucide-react"
 
 export const metadata: Metadata = {
@@ -121,13 +125,27 @@ const roiRows = [
   { metric: "Revenue recovered monthly", before: "Baseline", after: "+₹20-36 lakhs" },
 ]
 
-const compliance = [
-  "DPDP Act 2023: processing basis documented for every data touch",
-  "7-year claim audit trail per IRDAI guidelines",
-  "ICD-10-CM with CCI edits and MUE validation built in",
-  "NHCX-ready FHIR R4 claim bundle generation",
-  "Patient data processed and stored in India only - never leaves the country",
-  "Doctor OTP sign-off: medicolegally defensible record",
+const trustCards = [
+  {
+    icon: Lock,
+    title: "Data never leaves India",
+    body: "Encrypted at rest and in transit. Patient data is processed and stored on Indian servers only — no exceptions.",
+  },
+  {
+    icon: ScrollText,
+    title: "7-year audit trail",
+    body: "Every coding decision, approval, and submission logged with timestamps. IRDAI-mandated retention, fully searchable.",
+  },
+  {
+    icon: UserCheck,
+    title: "Medicolegal sign-off",
+    body: "Doctor OTP approval on every claim. Every decision is timestamped and defensible if a dispute arises.",
+  },
+  {
+    icon: ShieldCheck,
+    title: "IRDAI & DPDP ready",
+    body: "NHCX-compatible claim bundles. DPDP Act 2023 processing basis documented for every patient data touch.",
+  },
 ]
 
 export default function Home() {
@@ -373,20 +391,23 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Compliance */}
+      {/* Trust / Compliance */}
       <section className="bg-[#FEFCF8] px-4 py-20 sm:px-6 xl:px-10">
         <div className="mx-auto max-w-5xl">
           <p className="text-xs font-semibold uppercase tracking-widest text-[#B0A898]">
             Built for Indian healthcare
           </p>
-          <h2 className="mt-3 max-w-2xl text-2xl font-bold text-[#0F1F3D] sm:text-3xl">
-            Compliance is not an afterthought.
-          </h2>
-          <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {compliance.map((item) => (
-              <div key={item} className="flex items-start gap-3">
-                <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-[#1E6BFF]" />
-                <p className="text-sm text-[#5C5C6B]">{item}</p>
+          <div className="mt-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+            <h2 className="max-w-xl text-2xl font-bold text-[#0F1F3D] sm:text-3xl">
+              Healthcare-grade compliance. Built in.
+            </h2>
+          </div>
+          <div className="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {trustCards.map((card) => (
+              <div key={card.title} className="rounded-2xl border border-[#EAE6DE] bg-white p-6">
+                <card.icon className="size-7 text-[#0F1F3D]" strokeWidth={1.5} />
+                <h3 className="mt-4 text-sm font-semibold text-[#0F1F3D]">{card.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-[#8A8070]">{card.body}</p>
               </div>
             ))}
           </div>
