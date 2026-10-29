@@ -1,36 +1,25 @@
 import type { Metadata } from "next"
-import Image from "next/image"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
 import { MarketingFooter } from "@/components/marketing-footer"
 import { MarketingNav } from "@/components/marketing-nav"
 import { PreCheckDemo } from "@/components/pre-check-demo"
+import { AuditForm } from "@/components/audit-form"
 import {
-  TrendingDown,
-  Clock,
-  AlertTriangle,
-  FileX,
   Brain,
   FileCheck,
   BarChart2,
   GitBranch,
   Send,
   MessageSquare,
-  Zap,
-  TrendingUp,
-  ShieldAlert,
-  PieChart,
   CheckCircle2,
-  ScanLine,
-  LineChart,
-  Target,
+  ArrowRight,
 } from "lucide-react"
 
 export const metadata: Metadata = {
-  title: "ClearCycle — AI Claims Intelligence for Indian Hospitals",
+  title: "ClearCycle: AI Claims Intelligence for Indian Hospitals",
   description:
-    "ClearCycle automates insurance claim coding, TPA submission and denial appeals for Indian private hospitals. Recover ₹20–36 lakhs per month with AI.",
+    "ClearCycle automates insurance claim coding, TPA submission and denial appeals for Indian private hospitals. Recover ₹20-36 lakhs per month with AI.",
   alternates: { canonical: "https://clearcycle.in" },
 }
 
@@ -68,7 +57,7 @@ const softwareSchema = {
   featureList: [
     "AI Medical Coding (ICD-10, CPT)",
     "Policy Adjudication",
-    "ML Payer Intelligence — per-line deduction probability scoring",
+    "ML Payer Intelligence: per-line deduction probability scoring",
     "Autonomous TPA Submission",
     "IRDAI-Compliant Appeal Letters",
     "NHCX FHIR R4 Bundle Generation",
@@ -77,32 +66,38 @@ const softwareSchema = {
   ],
 }
 
-const CONTACT_HREF = "/contact"
+const PAYERS = [
+  "Star Health",
+  "ICICI Lombard",
+  "SBI General",
+  "HDFC Ergo",
+  "New India Assurance",
+  "United Health Insurance",
+  "Bajaj Allianz",
+  "Medi Assist",
+]
 
-const problems = [
+const impacts = [
+  { stat: "₹8,000 Cr", label: "lost by Indian hospitals to TPA denials every year" },
+  { stat: "34%", label: "of Star Health ortho claims rejected without implant invoice" },
+  { stat: "₹20-36L", label: "recovered per month by hospitals on ClearCycle" },
+]
+
+const steps = [
   {
-    icon: TrendingDown,
-    title: "₹8,000 Crore Lost Every Year",
-    description:
-      "Indian private hospitals lose 15–25% of billable revenue to claim denials and underpayments — often for avoidable coding and documentation errors.",
+    n: "01",
+    title: "Send us your remittance data",
+    body: "6 months of TPA remittance files. We handle the rest.",
   },
   {
-    icon: Clock,
-    title: "45–90 Days to Settlement",
-    description:
-      "Cash flow paralysis. Billing staff spend more time chasing TPAs than serving patients, with no visibility into where claims stand.",
+    n: "02",
+    title: "We audit your leakage",
+    body: "Our team maps every deduction pattern specific to your payer mix and flags exactly what's costing you.",
   },
   {
-    icon: AlertTriangle,
-    title: "Submitting Blind",
-    description:
-      "No awareness that Star Health rejects 34% of ortho claims without an implant invoice, or that ICICI Lombard systematically deducts room upgrade charges.",
-  },
-  {
-    icon: FileX,
-    title: "3–5 Hours Per Appeal",
-    description:
-      "Every denial requires manual research, letter drafting, and resubmission. Most small hospitals have no dedicated RCM team to handle this at scale.",
+    n: "03",
+    title: "See your number",
+    body: "You get a report showing the exact amount your hospital is leaving on the table - and a clear action plan to recover it.",
   },
 ]
 
@@ -123,7 +118,7 @@ const solutions = [
     icon: BarChart2,
     title: "ML Payer Intelligence",
     description:
-      "Per-line deduction probability scoring before you submit. LightGBM model trained on carrier rejection history. Flags high-risk lines with the exact reason and suggested fix.",
+      "Per-line deduction probability scoring before you submit. LightGBM model trained on carrier rejection history. Flags high-risk lines with the exact reason and fix.",
   },
   {
     icon: GitBranch,
@@ -145,48 +140,21 @@ const solutions = [
   },
 ]
 
-const whyNow = [
-  {
-    icon: Zap,
-    title: "NHCX Going Mainstream",
-    description:
-      "IRDAI pushing digital claims standardisation. 83 payers and 42,000+ hospitals already onboarded.",
-  },
-  {
-    icon: TrendingUp,
-    title: "Market Growing 15% YoY",
-    description:
-      "More policies, more claims, more complexity. Manual teams cannot scale without automation.",
-  },
-  {
-    icon: ShieldAlert,
-    title: "Denial Rates Rising",
-    description:
-      "TPAs tightening rejection criteria year on year. Star Health denial rates up 23% in 2 years.",
-  },
-  {
-    icon: PieChart,
-    title: "Margins Under Pressure",
-    description:
-      "Revenue recovery is the fastest path to margin improvement without capital expenditure.",
-  },
-]
-
 const roiRows = [
-  { metric: "Claim processing time", before: "3–5 days", after: "4–6 hours" },
-  { metric: "First-pass TPA acceptance", before: "65–70%", after: "85–90%" },
-  { metric: "Appeal turnaround", before: "3–5 days", after: "Same day" },
-  { metric: "TPA portal work per claim", before: "45–60 minutes", after: "Automated" },
-  { metric: "Revenue recovered monthly", before: "Baseline", after: "+₹20–36 lakhs" },
+  { metric: "Claim processing time", before: "3-5 days", after: "4-6 hours" },
+  { metric: "First-pass TPA acceptance", before: "65-70%", after: "85-90%" },
+  { metric: "Appeal turnaround", before: "3-5 days", after: "Same day" },
+  { metric: "TPA portal work per claim", before: "45-60 minutes", after: "Automated" },
+  { metric: "Revenue recovered monthly", before: "Baseline", after: "+₹20-36 lakhs" },
 ]
 
 const compliance = [
-  "DPDP Act 2023 — processing basis documented for every data touch",
+  "DPDP Act 2023: processing basis documented for every data touch",
   "7-year claim audit trail per IRDAI guidelines",
   "ICD-10-CM with CCI edits and MUE validation built in",
   "NHCX-ready FHIR R4 claim bundle generation",
-  "AWS ap-south-1 — patient data never leaves India",
-  "Doctor OTP sign-off — medicolegally defensible record",
+  "AWS ap-south-1: patient data never leaves India",
+  "Doctor OTP sign-off: medicolegally defensible record",
 ]
 
 export default function Home() {
@@ -203,166 +171,215 @@ export default function Home() {
       <MarketingNav />
 
       {/* Hero */}
-      <section className="grid min-h-[90vh] grid-cols-1 bg-[#0F1F3D] lg:grid-cols-2">
-        <div className="mx-auto flex w-full max-w-7xl flex-col justify-center px-4 py-20 sm:px-6 lg:col-span-1 lg:py-0 xl:px-10">
-          <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl md:text-5xl">
-            Your billing team is losing crores to a broken claims process.
-          </h1>
-          <p className="mt-6 max-w-xl text-base text-white/60 sm:text-lg">
-            ClearCycle automates the entire claim lifecycle — from discharge summary to TPA
-            settlement. ML payer intelligence scores every line for deduction risk before you
-            submit.
-          </p>
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <Button
-              nativeButton={false}
-              render={<a href={CONTACT_HREF}>Contact Sales</a>}
-              size="lg"
-              className="bg-[#1E6BFF] text-white hover:bg-[#1E6BFF]/90"
-            />
-            <Button
-              nativeButton={false}
-              render={<a href="#solution">See How It Works</a>}
-              size="lg"
-              variant="outline"
-              className="border-white/40 bg-transparent text-white hover:bg-white/10 hover:text-white"
-            />
+      <section className="bg-[#0F1F3D] px-4 pb-0 pt-16 sm:px-6 xl:px-10">
+        <div className="mx-auto max-w-7xl">
+          <div className="grid grid-cols-1 gap-12 lg:grid-cols-2 lg:items-center">
+            {/* Left */}
+            <div className="pb-16 lg:pb-24">
+              <p className="text-xs font-semibold uppercase tracking-widest text-[#1E6BFF]">
+                ML Payer Intelligence
+              </p>
+              <h1 className="mt-4 text-4xl font-bold leading-tight text-white sm:text-5xl lg:text-[3.25rem]">
+                Your hospital is owed money it will never collect.
+              </h1>
+              <p className="mt-6 max-w-lg text-base text-white/60 sm:text-lg">
+                TPA deductions happen silently. ClearCycle surfaces them before submission and
+                improves first-pass acceptance from 68% to 88%.
+              </p>
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                <a
+                  href="#audit"
+                  className="inline-flex h-11 items-center justify-center gap-1.5 rounded-xl bg-[#1E6BFF] px-7 text-sm font-semibold text-white transition hover:bg-[#1E6BFF]/90"
+                >
+                  Get your free audit <ArrowRight className="size-4" />
+                </a>
+                <a
+                  href="#payer-intelligence"
+                  className="inline-flex h-11 items-center justify-center rounded-xl border border-white/20 px-7 text-sm font-semibold text-white transition hover:bg-white/10"
+                >
+                  See it working
+                </a>
+              </div>
+              <div className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-xs text-white/40">
+                <span>3-month free pilot</span>
+                <span>Full pipeline live in 2 weeks</span>
+                <span>Data stays in India</span>
+              </div>
+            </div>
+
+            {/* Right: payer intelligence demo (clipped at bottom, invites scroll) */}
+            <div className="relative hidden overflow-hidden lg:block" style={{ maskImage: "linear-gradient(to bottom, black 70%, transparent 100%)" }}>
+              <div className="pointer-events-none select-none rounded-t-xl border border-white/10 bg-white/5 p-1">
+                <div className="flex items-center gap-1.5 border-b border-white/10 px-3 py-2">
+                  <span className="size-2.5 rounded-full bg-white/20" />
+                  <span className="size-2.5 rounded-full bg-white/20" />
+                  <span className="size-2.5 rounded-full bg-white/20" />
+                  <span className="ml-3 text-xs text-white/30">ClearCycle - Payer Intelligence</span>
+                </div>
+                <PreCheckDemo />
+              </div>
+            </div>
           </div>
         </div>
-        <div className="relative hidden items-center justify-center overflow-hidden px-6 lg:flex xl:px-10">
-          <div className="relative w-full max-w-2xl rotate-1">
-            <Image
-              src="/dashboard-preview.png"
-              alt="ClearCycle dashboard"
-              width={1280}
-              height={800}
-              className="w-full rounded-xl shadow-2xl ring-1 ring-white/10"
-              priority
-            />
+      </section>
+
+      {/* Payer logos strip */}
+      <section className="border-y bg-[#F7F8FA] px-4 py-6 sm:px-6">
+        <div className="mx-auto max-w-7xl">
+          <p className="mb-4 text-center text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+            42 behavioural profiles mapped across major Indian TPAs
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            {PAYERS.map((p) => (
+              <span
+                key={p}
+                className="rounded-full border border-border bg-white px-4 py-1.5 text-xs font-medium text-muted-foreground"
+              >
+                {p}
+              </span>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Impact numbers */}
+      <section className="bg-white px-4 py-16 sm:px-6 xl:px-10">
+        <div className="mx-auto max-w-5xl">
+          <div className="grid grid-cols-1 divide-y sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+            {impacts.map((item) => (
+              <div key={item.stat} className="px-8 py-8 text-center first:pt-0 last:pb-0 sm:py-4 sm:first:pt-4 sm:last:pb-4">
+                <p className="text-4xl font-bold text-[#0F1F3D]">{item.stat}</p>
+                <p className="mt-2 text-sm text-muted-foreground">{item.label}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
       {/* Problem */}
-      <section id="problem" className="bg-white px-4 py-20 sm:px-6 xl:px-10">
+      <section className="bg-[#F7F8FA] px-4 py-20 sm:px-6 xl:px-10">
         <div className="mx-auto max-w-7xl">
-          <p className="text-xs font-semibold tracking-widest text-muted-foreground">
-            THE PROBLEM
+          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+            The problem
           </p>
           <h2 className="mt-3 max-w-2xl text-2xl font-bold sm:text-3xl">
-            Manual billing is costing your hospital more than you think.
+            Manual billing is breaking your revenue cycle.
           </h2>
-          <div className="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2">
-            {problems.map((item) => (
-              <Card key={item.title}>
-                <CardContent className="flex flex-col gap-3">
-                  <item.icon className="size-8 text-[#1E6BFF]" />
-                  <h3 className="font-semibold">{item.title}</h3>
-                  <p className="text-sm text-muted-foreground">{item.description}</p>
-                </CardContent>
-              </Card>
+          <div className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-3">
+            <div className="rounded-2xl bg-white p-8 shadow-sm">
+              <p className="text-3xl font-bold text-[#0F1F3D]">₹15-25%</p>
+              <h3 className="mt-3 font-semibold">Revenue lost silently</h3>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Not rejected outright. Quietly deducted. Room upgrades, missing invoices, coding
+                mismatches. Most hospitals find out 60 days later when the remittance comes in short.
+              </p>
+            </div>
+            <div className="rounded-2xl bg-white p-8 shadow-sm">
+              <p className="text-3xl font-bold text-[#0F1F3D]">45-90 days</p>
+              <h3 className="mt-3 font-semibold">Cash flow paralysis</h3>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Once a claim goes into the TPA portal, it disappears. Your billing team checks
+                status manually. Denials arrive with vague reason codes. Nobody is watching.
+              </p>
+            </div>
+            <div className="rounded-2xl bg-white p-8 shadow-sm">
+              <p className="text-3xl font-bold text-[#0F1F3D]">3-5 hrs</p>
+              <h3 className="mt-3 font-semibold">Per appeal, per denial</h3>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Research the denial. Find the policy clause. Draft the letter. Resubmit. For a
+                billing team of 3, that&apos;s a full-time job just to chase what you were already owed.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Payer Intelligence: hero feature */}
+      <section id="payer-intelligence" className="bg-[#0F1F3D] px-4 py-20 sm:px-6 xl:px-10">
+        <div className="mx-auto max-w-7xl">
+          <p className="text-xs font-semibold uppercase tracking-widest text-[#1E6BFF]">
+            ML Payer Intelligence
+          </p>
+          <div className="mt-3 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <h2 className="max-w-xl text-2xl font-bold text-white sm:text-3xl">
+              We know what Star Health will cut before you submit.
+            </h2>
+            <p className="max-w-md text-sm text-white/50 lg:text-right">
+              LightGBM model trained on carrier rejection history. Every claim line gets a deduction
+              probability, a predicted rupee amount, and a fix.
+            </p>
+          </div>
+
+          <div className="mt-10">
+            <PreCheckDemo />
+          </div>
+
+          <div className="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-3">
+            <div className="rounded-xl border border-white/10 bg-white/5 p-6">
+              <p className="text-2xl font-bold text-[#1E6BFF]">42</p>
+              <h3 className="mt-2 font-semibold text-white">Payer rejection profiles</h3>
+              <p className="mt-1.5 text-sm text-white/50">
+                Star Health, ICICI Lombard, SBI General, Bajaj Allianz, Tata AIG, Medi Assist
+                and more - each with known deduction patterns.
+              </p>
+            </div>
+            <div className="rounded-xl border border-white/10 bg-white/5 p-6">
+              <p className="text-2xl font-bold text-[#1E6BFF]">68% → 88%</p>
+              <h3 className="mt-2 font-semibold text-white">First-pass acceptance</h3>
+              <p className="mt-1.5 text-sm text-white/50">
+                The 20-point gap between what hospitals get and what they should get. We close it
+                before the claim leaves the building.
+              </p>
+            </div>
+            <div className="rounded-xl border border-white/10 bg-white/5 p-6">
+              <p className="text-2xl font-bold text-[#1E6BFF]">Gets smarter</p>
+              <h3 className="mt-2 font-semibold text-white">Trained on your data</h3>
+              <p className="mt-1.5 text-sm text-white/50">
+                The model fine-tunes on your hospital&apos;s own remittance history. Predictions improve
+                as your claim volume grows.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* How the audit works */}
+      <section className="bg-white px-4 py-20 sm:px-6 xl:px-10">
+        <div className="mx-auto max-w-5xl">
+          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+            How it starts
+          </p>
+          <h2 className="mt-3 max-w-2xl text-2xl font-bold sm:text-3xl">
+            We audit your leakage first. No pitch, just the numbers.
+          </h2>
+          <div className="mt-12 grid grid-cols-1 gap-8 sm:grid-cols-3">
+            {steps.map((s) => (
+              <div key={s.n} className="flex flex-col gap-3">
+                <p className="text-4xl font-bold text-[#EAF2FF]">{s.n}</p>
+                <h3 className="font-semibold">{s.title}</h3>
+                <p className="text-sm text-muted-foreground">{s.body}</p>
+              </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Solution */}
-      <section id="solution" className="bg-[#EAF2FF] px-4 py-20 sm:px-6 xl:px-10">
+      {/* Full platform */}
+      <section id="solution" className="bg-[#F7F8FA] px-4 py-20 sm:px-6 xl:px-10">
         <div className="mx-auto max-w-7xl">
-          <p className="text-xs font-semibold tracking-widest text-muted-foreground">
-            THE SOLUTION
+          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+            The platform
           </p>
           <h2 className="mt-3 max-w-2xl text-2xl font-bold sm:text-3xl">
             One platform. The entire claim lifecycle.
           </h2>
-          <div className="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
+          <div className="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {solutions.map((item) => (
-              <Card key={item.title} className="bg-white">
-                <CardContent className="flex flex-col gap-3">
-                  <item.icon className="size-8 text-[#1E6BFF]" />
-                  <h3 className="font-semibold">{item.title}</h3>
-                  <p className="text-sm text-muted-foreground">{item.description}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Payer Intelligence Deep-Dive */}
-      <section id="payer-intelligence" className="bg-[#0F1F3D] px-4 py-20 sm:px-6 xl:px-10">
-        <div className="mx-auto max-w-7xl">
-          <p className="text-xs font-semibold tracking-widest text-[#1E6BFF]">
-            ML PAYER INTELLIGENCE
-          </p>
-          <h2 className="mt-3 max-w-2xl text-2xl font-bold text-white sm:text-3xl">
-            Know your deduction risk before you hit submit.
-          </h2>
-          <p className="mt-4 max-w-2xl text-base text-white/60">
-            Our LightGBM model learns carrier-specific rejection patterns from your hospital&apos;s
-            own remittance history. Every claim line gets a deduction probability score, a predicted
-            amount, and a suggested action — before you submit to the TPA.
-          </p>
-          <div className="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-3">
-            <div className="rounded-xl border border-white/10 bg-white/5 p-6">
-              <ScanLine className="size-8 text-[#1E6BFF]" />
-              <h3 className="mt-3 font-semibold text-white">Pre-Submission Risk Score</h3>
-              <p className="mt-2 text-sm text-white/60">
-                Each procedure line gets a deduction probability (0–100%) and risk tier —
-                High, Medium, or Low — based on your payer&apos;s historical behaviour on that CPT/ICD
-                combination.
-              </p>
-            </div>
-            <div className="rounded-xl border border-white/10 bg-white/5 p-6">
-              <LineChart className="size-8 text-[#1E6BFF]" />
-              <h3 className="mt-3 font-semibold text-white">Expected Deduction Forecast</h3>
-              <p className="mt-2 text-sm text-white/60">
-                Know the rupee impact before settlement. Per-line expected deduction and total
-                collection rate help your billing team prioritise which claims to review before
-                submission.
-              </p>
-            </div>
-            <div className="rounded-xl border border-white/10 bg-white/5 p-6">
-              <Target className="size-8 text-[#1E6BFF]" />
-              <h3 className="mt-3 font-semibold text-white">Gets Smarter Over Time</h3>
-              <p className="mt-2 text-sm text-white/60">
-                The model fine-tunes on your hospital&apos;s actual remittance data — so predictions
-                improve as your claim history grows. Carrier profiles cover Star Health, ICICI
-                Lombard, SBI General, Bajaj Allianz, Tata AIG, and Medi Assist.
-              </p>
-            </div>
-          </div>
-          <div className="mt-8 rounded-xl border border-[#1E6BFF]/30 bg-[#1E6BFF]/10 px-6 py-5">
-            <p className="text-sm text-white/80">
-              <span className="font-semibold text-white">How it works: </span>
-              Upload your discharge summary → AI codes the claim → Payer Intelligence scores every
-              line → High-risk lines flagged with exact reason (e.g. &quot;Star Health rejects
-              implant-only CPT without attached invoice&quot;) → Billing team corrects before submission
-              → First-pass acceptance rate improves from ~68% to ~88%.
-            </p>
-          </div>
-          <PreCheckDemo />
-        </div>
-      </section>
-
-      {/* Why Now */}
-      <section className="bg-white px-4 py-20 sm:px-6 xl:px-10">
-        <div className="mx-auto max-w-7xl">
-          <p className="text-xs font-semibold tracking-widest text-muted-foreground">
-            WHY NOW
-          </p>
-          <h2 className="mt-3 max-w-2xl text-2xl font-bold sm:text-3xl">
-            The Indian health insurance market is at an inflection point.
-          </h2>
-          <div className="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {whyNow.map((item) => (
-              <Card key={item.title}>
-                <CardContent className="flex flex-col gap-3">
-                  <item.icon className="size-8 text-[#1E6BFF]" />
-                  <h3 className="font-semibold">{item.title}</h3>
-                  <p className="text-sm text-muted-foreground">{item.description}</p>
-                </CardContent>
-              </Card>
+              <div key={item.title} className="rounded-2xl bg-white p-6 shadow-sm">
+                <item.icon className="size-8 text-[#1E6BFF]" />
+                <h3 className="mt-4 font-semibold">{item.title}</h3>
+                <p className="mt-2 text-sm text-muted-foreground">{item.description}</p>
+              </div>
             ))}
           </div>
         </div>
@@ -371,7 +388,7 @@ export default function Home() {
       {/* ROI */}
       <section id="impact" className="bg-[#0F1F3D] px-4 py-20 sm:px-6 xl:px-10">
         <div className="mx-auto max-w-5xl">
-          <p className="text-xs font-semibold tracking-widest text-white/50">THE IMPACT</p>
+          <p className="text-xs font-semibold uppercase tracking-widest text-white/50">The impact</p>
           <h2 className="mt-3 max-w-2xl text-2xl font-bold text-white sm:text-3xl">
             What changes at a hospital billing ₹2 crore per month.
           </h2>
@@ -399,8 +416,8 @@ export default function Home() {
             </table>
           </div>
           <div className="mt-6 rounded-xl border border-[#1E6BFF]/30 bg-[#1E6BFF]/10 px-6 py-5 text-center text-white">
-            <span className="font-semibold">₹20–36 lakhs</span> recovered per month vs{" "}
-            <span className="font-semibold">₹2–4 lakhs</span> cost. ROI visible within 30 days.
+            <span className="font-semibold">₹20-36 lakhs</span> recovered per month vs{" "}
+            <span className="font-semibold">₹2-4 lakhs</span> cost. ROI visible within 30 days.
           </div>
         </div>
       </section>
@@ -408,8 +425,8 @@ export default function Home() {
       {/* Compliance */}
       <section className="bg-white px-4 py-20 sm:px-6 xl:px-10">
         <div className="mx-auto max-w-5xl">
-          <p className="text-xs font-semibold tracking-widest text-muted-foreground">
-            BUILT FOR INDIAN HEALTHCARE
+          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+            Built for Indian healthcare
           </p>
           <h2 className="mt-3 max-w-2xl text-2xl font-bold sm:text-3xl">
             Compliance is not an afterthought.
@@ -425,26 +442,39 @@ export default function Home() {
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="bg-[#1E6BFF] px-4 py-20 text-center sm:px-6">
-        <div className="mx-auto max-w-2xl">
-          <h2 className="text-2xl font-bold text-white sm:text-3xl">
-            Ready to recover what your hospital is owed?
-          </h2>
-          <p className="mt-4 text-white/70">
-            We&apos;re offering a 3-month free pilot to the first hospitals we onboard. No
-            commitment. Full pipeline live within 2 weeks.
+      {/* Audit CTA */}
+      <section id="audit" className="bg-[#0F1F3D] px-4 py-20 sm:px-6 xl:px-10">
+        <div className="mx-auto max-w-3xl">
+          <p className="text-xs font-semibold uppercase tracking-widest text-[#1E6BFF]">
+            Free TPA leakage audit
           </p>
-          <Button
-            nativeButton={false}
-            render={<a href={CONTACT_HREF}>Contact Sales</a>}
-            size="lg"
-            className="mt-8 bg-white text-[#0F1F3D] hover:bg-white/90"
-          />
-          <p className="mt-5 text-sm text-white/60">
-            <a href="tel:+919163236777" className="hover:text-white/80 transition-colors">+91 91632 36777</a>
-            {" "}·{" "}
-            <a href="mailto:gaurav@gauravhira.dev" className="hover:text-white/80 transition-colors">gaurav@gauravhira.dev</a>
+          <h2 className="mt-3 text-2xl font-bold text-white sm:text-3xl">
+            Find out exactly how much your hospital is losing.
+          </h2>
+          <p className="mt-4 text-base text-white/60">
+            Share 6 months of remittance data. We&apos;ll map your deduction patterns, identify the
+            biggest recoverable amounts, and show you what ClearCycle would change. No pitch until
+            you&apos;ve seen your number.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-4 text-sm text-white/40">
+            <span>Spots limited to 5 hospitals this month</span>
+            <span>·</span>
+            <span>3-month pilot included, free</span>
+            <span>·</span>
+            <span>Data stays in India</span>
+          </div>
+          <div className="mt-10">
+            <AuditForm />
+          </div>
+          <p className="mt-8 text-sm text-white/40">
+            Prefer a call?{" "}
+            <a href="tel:+919163236777" className="text-white/70 underline hover:text-white">
+              +91 91632 36777
+            </a>
+            {" "}or{" "}
+            <Link href="/contact" className="text-white/70 underline hover:text-white">
+              fill out the full form
+            </Link>
           </p>
         </div>
       </section>

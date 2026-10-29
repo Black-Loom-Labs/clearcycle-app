@@ -5,12 +5,12 @@ import { MarketingFooter } from "@/components/marketing-footer"
 import { ChevronDown } from "lucide-react"
 
 export const metadata: Metadata = {
-  title: "FAQ — Insurance Claims Automation",
+  title: "FAQ: Insurance Claims Automation",
   description:
     "Answers to the most common questions about ClearCycle: how AI medical coding works, TPA integration, NHCX compliance, pricing, and implementation for Indian hospitals.",
   alternates: { canonical: "https://clearcycle.in/faq" },
   openGraph: {
-    title: "FAQ — ClearCycle Insurance Claims Automation",
+    title: "FAQ: ClearCycle Insurance Claims Automation",
     description:
       "Answers to the most common questions about ClearCycle's AI-powered claims platform for Indian private hospitals.",
     url: "https://clearcycle.in/faq",

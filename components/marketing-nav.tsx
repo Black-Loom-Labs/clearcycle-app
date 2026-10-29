@@ -21,6 +21,11 @@ export function MarketingNav() {
   const [open, setOpen] = useState(false)
 
   return (
+    <>
+      <div className="w-full bg-[#0F1F3D] px-4 py-2 text-center text-xs font-medium text-white/80">
+        Limited slots open: free TPA leakage audit for hospitals joining the pilot.{" "}
+        <a href="#audit" className="font-semibold text-[#1E6BFF] hover:underline">Claim yours →</a>
+      </div>
     <header className="sticky top-0 z-50 border-b bg-white">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 xl:px-10">
         <Link href="/" aria-label="ClearCycle home" onClick={() => setOpen(false)}>
@@ -101,5 +106,6 @@ export function MarketingNav() {
         </div>
       )}
     </header>
+    </>
   )
 }

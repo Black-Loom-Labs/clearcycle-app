@@ -5,12 +5,12 @@ import { MarketingFooter } from "@/components/marketing-footer"
 import { allPosts } from "@/lib/blog-posts"
 
 export const metadata: Metadata = {
-  title: "Blog — Claims Intelligence & RCM for Indian Hospitals",
+  title: "Blog: Claims Intelligence & RCM for Indian Hospitals",
   description:
     "Insights on insurance claim denials, ICD-10 coding, TPA behaviour, NHCX compliance, and revenue cycle management for Indian private hospitals.",
   alternates: { canonical: "https://clearcycle.in/blog" },
   openGraph: {
-    title: "ClearCycle Blog — Claims Intelligence for Indian Hospitals",
+    title: "ClearCycle Blog: Claims Intelligence for Indian Hospitals",
     description:
       "Insights on insurance claim denials, ICD-10 coding, TPA behaviour, NHCX compliance, and RCM automation.",
     url: "https://clearcycle.in/blog",

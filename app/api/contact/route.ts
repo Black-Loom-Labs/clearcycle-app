@@ -6,9 +6,9 @@ const CC = "gauravhira24@gmail.com"
 const FROM = "ClearCycle <hello@clearcycle.in>"
 
 const ENQUIRY_LABELS: Record<string, string> = {
-  hospital_pilot: "Hospital — free pilot programme",
-  tpa_integration: "TPA — integration or data partnership",
-  his_integration: "HIS / billing software — API integration",
+  hospital_pilot: "Hospital: free pilot programme",
+  tpa_integration: "TPA: integration or data partnership",
+  his_integration: "HIS / billing software: API integration",
   partnership: "Business partnership or distribution",
   investor: "Investor enquiry",
   other: "Other",

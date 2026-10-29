@@ -6,9 +6,9 @@ import { MarketingFooter } from "@/components/marketing-footer"
 import { CheckCircle2, Loader2 } from "lucide-react"
 
 const ENQUIRY_TYPES = [
-  { value: "hospital_pilot", label: "Hospital — free pilot programme" },
-  { value: "tpa_integration", label: "TPA — integration or data partnership" },
-  { value: "his_integration", label: "HIS / billing software — API integration" },
+  { value: "hospital_pilot", label: "Hospital: free pilot programme" },
+  { value: "tpa_integration", label: "TPA: integration or data partnership" },
+  { value: "his_integration", label: "HIS / billing software: API integration" },
   { value: "partnership", label: "Business partnership or distribution" },
   { value: "investor", label: "Investor enquiry" },
   { value: "other", label: "Something else" },
@@ -88,7 +88,7 @@ export default function ContactPage() {
           <h1 className="mt-3 text-3xl font-bold text-white sm:text-4xl">Get in touch</h1>
           <p className="mt-4 max-w-xl text-base text-white/60">
             Whether you&apos;re a hospital exploring the pilot, a TPA looking to integrate, a HIS
-            vendor or a potential partner — we&apos;d love to talk.
+            vendor, or a potential partner. We&apos;d love to talk.
           </p>
         </div>
       </div>

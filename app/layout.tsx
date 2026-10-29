@@ -18,11 +18,11 @@ const SITE_URL = "https://clearcycle.in";
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "ClearCycle — AI Claims Intelligence for Indian Hospitals",
+    default: "ClearCycle: AI Claims Intelligence for Indian Hospitals",
     template: "%s | ClearCycle",
   },
   description:
-    "ClearCycle automates insurance claim coding, adjudication, TPA submission and appeal for Indian private hospitals — recovering ₹20–36 lakhs per month with AI.",
+    "ClearCycle automates insurance claim coding, adjudication, TPA submission and appeal for Indian private hospitals. Recover ₹20-36 lakhs per month with AI.",
   keywords: [
     "hospital revenue cycle management India",
     "insurance claim automation India",
@@ -49,23 +49,23 @@ export const metadata: Metadata = {
     locale: "en_IN",
     url: SITE_URL,
     siteName: "ClearCycle",
-    title: "ClearCycle — AI Claims Intelligence for Indian Hospitals",
+    title: "ClearCycle: AI Claims Intelligence for Indian Hospitals",
     description:
-      "Automate insurance claim coding, adjudication, TPA submission and appeal. Recover ₹20–36 lakhs per month.",
+      "Automate insurance claim coding, adjudication, TPA submission and appeal. Recover ₹20-36 lakhs per month.",
     images: [
       {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "ClearCycle — AI Claims Intelligence Platform",
+        alt: "ClearCycle: AI Claims Intelligence Platform",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "ClearCycle — AI Claims Intelligence for Indian Hospitals",
+    title: "ClearCycle: AI Claims Intelligence for Indian Hospitals",
     description:
-      "Automate insurance claim coding, adjudication, TPA submission and appeal. Recover ₹20–36 lakhs per month.",
+      "Automate insurance claim coding, adjudication, TPA submission and appeal. Recover ₹20-36 lakhs per month.",
     images: ["/og-image.png"],
     creator: "@clearcycle_in",
   },
