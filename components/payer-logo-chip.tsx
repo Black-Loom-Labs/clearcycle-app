@@ -9,7 +9,7 @@ export function PayerLogoChip({ name, domain }: { name: string; domain: string }
     <div className="flex items-center gap-2.5 rounded-full border border-[#E8E4D8] bg-white px-4 py-2 shadow-sm">
       {!imgFailed && (
         <img
-          src={`https://logo.clearbit.com/${domain}`}
+          src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`}
           alt={name}
           width={20}
           height={20}

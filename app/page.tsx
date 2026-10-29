@@ -1,11 +1,11 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { Button } from "@/components/ui/button"
 import { MarketingFooter } from "@/components/marketing-footer"
 import { MarketingNav } from "@/components/marketing-nav"
 import { PreCheckDemo } from "@/components/pre-check-demo"
 import { AuditForm } from "@/components/audit-form"
 import { PayerLogoChip } from "@/components/payer-logo-chip"
+import { WorkflowDiagram } from "@/components/workflow-diagram"
 import {
   Brain,
   FileCheck,
@@ -37,7 +37,6 @@ const organizationSchema = {
     areaServed: "IN",
     availableLanguage: "en",
   },
-  sameAs: [],
 }
 
 const softwareSchema = {
@@ -48,23 +47,13 @@ const softwareSchema = {
   operatingSystem: "Web",
   url: "https://clearcycle.in",
   description:
-    "AI-powered revenue cycle management platform for Indian private hospitals. Automates ICD-10 coding, TPA claim submission, policy adjudication, and denial appeal letters.",
+    "AI-powered revenue cycle management platform for Indian private hospitals.",
   offers: {
     "@type": "Offer",
     price: "0",
     priceCurrency: "INR",
     description: "3-month free pilot for early hospitals",
   },
-  featureList: [
-    "AI Medical Coding (ICD-10, CPT)",
-    "Policy Adjudication",
-    "ML Payer Intelligence: per-line deduction probability scoring",
-    "Autonomous TPA Submission",
-    "IRDAI-Compliant Appeal Letters",
-    "NHCX FHIR R4 Bundle Generation",
-    "3-Gate Doctor Approval Workflow",
-    "DPDP Act 2023 Compliant",
-  ],
 }
 
 const PAYERS = [
@@ -84,24 +73,6 @@ const impacts = [
   { stat: "₹20-36L", label: "recovered per month by hospitals on ClearCycle" },
 ]
 
-const steps = [
-  {
-    n: "01",
-    title: "Send us your remittance data",
-    body: "6 months of TPA remittance files. We handle the rest.",
-  },
-  {
-    n: "02",
-    title: "We audit your leakage",
-    body: "Our team maps every deduction pattern specific to your payer mix and flags exactly what's costing you.",
-  },
-  {
-    n: "03",
-    title: "See your number",
-    body: "You get a report showing the exact amount your hospital is leaving on the table - and a clear action plan to recover it.",
-  },
-]
-
 const solutions = [
   {
     icon: Brain,
@@ -119,7 +90,7 @@ const solutions = [
     icon: BarChart2,
     title: "ML Payer Intelligence",
     description:
-      "Per-line deduction probability scoring before you submit. LightGBM model trained on carrier rejection history. Flags high-risk lines with the exact reason and fix.",
+      "Per-line deduction probability scoring before you submit. Flags high-risk lines with the exact reason and fix.",
   },
   {
     icon: GitBranch,
@@ -160,7 +131,7 @@ const compliance = [
 
 export default function Home() {
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col bg-[#FEFCF8]">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
@@ -172,51 +143,53 @@ export default function Home() {
       <MarketingNav />
 
       {/* Hero */}
-      <section className="bg-[#0F1F3D] px-4 pb-0 pt-16 sm:px-6 xl:px-10">
+      <section className="px-4 pb-0 pt-16 sm:px-6 xl:px-10">
         <div className="mx-auto max-w-7xl">
           <div className="grid grid-cols-1 gap-12 lg:grid-cols-2 lg:items-center">
-            {/* Left */}
-            <div className="pb-16 lg:pb-24">
-              <p className="text-xs font-semibold uppercase tracking-widest text-[#1E6BFF]">
+            <div className="pb-12 lg:pb-20">
+              <span className="inline-flex items-center rounded-full border border-[#1E6BFF]/20 bg-[#EEF4FF] px-3 py-1 text-xs font-semibold text-[#1E6BFF]">
                 ML Payer Intelligence
-              </p>
-              <h1 className="mt-4 text-4xl font-bold leading-tight text-white sm:text-5xl lg:text-[3.25rem]">
+              </span>
+              <h1 className="mt-5 text-4xl font-bold leading-tight text-[#0F1F3D] sm:text-5xl lg:text-[3.25rem]">
                 Your hospital is owed money it will never collect.
               </h1>
-              <p className="mt-6 max-w-lg text-base text-white/60 sm:text-lg">
+              <p className="mt-5 max-w-lg text-base text-[#5C5C6B] sm:text-lg">
                 TPA deductions happen silently. ClearCycle surfaces them before submission and
                 improves first-pass acceptance from 68% to 88%.
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <a
                   href="#audit"
-                  className="inline-flex h-11 items-center justify-center gap-1.5 rounded-xl bg-[#1E6BFF] px-7 text-sm font-semibold text-white transition hover:bg-[#1E6BFF]/90"
+                  className="inline-flex h-11 items-center justify-center gap-1.5 rounded-xl bg-[#1E6BFF] px-7 text-sm font-semibold text-white transition hover:bg-[#1557D4]"
                 >
                   Get your free audit <ArrowRight className="size-4" />
                 </a>
                 <a
                   href="#payer-intelligence"
-                  className="inline-flex h-11 items-center justify-center rounded-xl border border-white/20 px-7 text-sm font-semibold text-white transition hover:bg-white/10"
+                  className="inline-flex h-11 items-center justify-center rounded-xl border border-[#E0DAD0] px-7 text-sm font-semibold text-[#0F1F3D] transition hover:bg-[#F4F0E8]"
                 >
                   See it working
                 </a>
               </div>
-              <div className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-xs text-white/40">
+              <div className="mt-7 flex flex-wrap gap-x-6 gap-y-2 text-xs text-[#A09888]">
                 <span>3-month free pilot</span>
                 <span>Full pipeline live in 2 weeks</span>
                 <span>Data stays in India</span>
               </div>
             </div>
 
-            {/* Right: payer intelligence demo (clipped at bottom, invites scroll) */}
-            <div className="relative hidden overflow-hidden lg:block" style={{ maskImage: "linear-gradient(to bottom, black 70%, transparent 100%)" }}>
-              <div className="pointer-events-none select-none rounded-t-xl border border-white/10 bg-white/5 p-1">
-                <div className="flex items-center gap-1.5 border-b border-white/10 px-3 py-2">
-                  <span className="size-2.5 rounded-full bg-white/20" />
-                  <span className="size-2.5 rounded-full bg-white/20" />
-                  <span className="size-2.5 rounded-full bg-white/20" />
-                  <span className="ml-3 text-xs text-white/30">ClearCycle - Payer Intelligence</span>
-                </div>
+            {/* Right: payer intelligence demo clipped at bottom */}
+            <div
+              className="relative hidden overflow-hidden rounded-t-2xl border border-[#E8E4D8] bg-white shadow-lg lg:block"
+              style={{ maskImage: "linear-gradient(to bottom, black 65%, transparent 100%)" }}
+            >
+              <div className="flex items-center gap-1.5 border-b border-[#F0EDE6] bg-[#FAFAF8] px-4 py-2.5">
+                <span className="size-2.5 rounded-full bg-[#E8E4D8]" />
+                <span className="size-2.5 rounded-full bg-[#E8E4D8]" />
+                <span className="size-2.5 rounded-full bg-[#E8E4D8]" />
+                <span className="ml-3 text-xs text-[#B0A898]">ClearCycle - Payer Intelligence</span>
+              </div>
+              <div className="pointer-events-none select-none">
                 <PreCheckDemo />
               </div>
             </div>
@@ -225,9 +198,9 @@ export default function Home() {
       </section>
 
       {/* Payer logos strip */}
-      <section className="border-y border-[#E8E4D8] bg-[#FAF7F2] px-4 py-7 sm:px-6">
+      <section className="border-y border-[#EAE6DE] bg-white px-4 py-7 sm:px-6">
         <div className="mx-auto max-w-7xl">
-          <p className="mb-5 text-center text-xs font-semibold uppercase tracking-widest text-[#A09888]">
+          <p className="mb-5 text-center text-xs font-semibold uppercase tracking-widest text-[#B0A898]">
             42 behavioural profiles mapped across major Indian TPAs
           </p>
           <div className="flex flex-wrap items-center justify-center gap-3">
@@ -241,11 +214,11 @@ export default function Home() {
       {/* Impact numbers */}
       <section className="bg-[#FEFCF8] px-4 py-16 sm:px-6 xl:px-10">
         <div className="mx-auto max-w-5xl">
-          <div className="grid grid-cols-1 divide-y sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+          <div className="grid grid-cols-1 divide-y divide-[#EAE6DE] sm:grid-cols-3 sm:divide-x sm:divide-y-0">
             {impacts.map((item) => (
               <div key={item.stat} className="px-8 py-8 text-center first:pt-0 last:pb-0 sm:py-4 sm:first:pt-4 sm:last:pb-4">
                 <p className="text-4xl font-bold text-[#0F1F3D]">{item.stat}</p>
-                <p className="mt-2 text-sm text-muted-foreground">{item.label}</p>
+                <p className="mt-2 text-sm text-[#8A8070]">{item.label}</p>
               </div>
             ))}
           </div>
@@ -253,107 +226,90 @@ export default function Home() {
       </section>
 
       {/* Problem */}
-      <section className="bg-[#F4F0E8] px-4 py-20 sm:px-6 xl:px-10">
+      <section className="bg-white px-4 py-20 sm:px-6 xl:px-10">
         <div className="mx-auto max-w-7xl">
-          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+          <p className="text-xs font-semibold uppercase tracking-widest text-[#B0A898]">
             The problem
           </p>
-          <h2 className="mt-3 max-w-2xl text-2xl font-bold sm:text-3xl">
+          <h2 className="mt-3 max-w-2xl text-2xl font-bold text-[#0F1F3D] sm:text-3xl">
             Manual billing is breaking your revenue cycle.
           </h2>
           <div className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-3">
-            <div className="rounded-2xl bg-white p-8 shadow-sm">
-              <p className="text-3xl font-bold text-[#0F1F3D]">₹15-25%</p>
-              <h3 className="mt-3 font-semibold">Revenue lost silently</h3>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Not rejected outright. Quietly deducted. Room upgrades, missing invoices, coding
-                mismatches. Most hospitals find out 60 days later when the remittance comes in short.
-              </p>
-            </div>
-            <div className="rounded-2xl bg-white p-8 shadow-sm">
-              <p className="text-3xl font-bold text-[#0F1F3D]">45-90 days</p>
-              <h3 className="mt-3 font-semibold">Cash flow paralysis</h3>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Once a claim goes into the TPA portal, it disappears. Your billing team checks
-                status manually. Denials arrive with vague reason codes. Nobody is watching.
-              </p>
-            </div>
-            <div className="rounded-2xl bg-white p-8 shadow-sm">
-              <p className="text-3xl font-bold text-[#0F1F3D]">3-5 hrs</p>
-              <h3 className="mt-3 font-semibold">Per appeal, per denial</h3>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Research the denial. Find the policy clause. Draft the letter. Resubmit. For a
-                billing team of 3, that&apos;s a full-time job just to chase what you were already owed.
-              </p>
-            </div>
+            {[
+              {
+                stat: "₹15-25%",
+                title: "Revenue lost silently",
+                body: "Not rejected outright. Quietly deducted. Room upgrades, missing invoices, coding mismatches. Most hospitals find out 60 days later when the remittance comes in short.",
+              },
+              {
+                stat: "45-90 days",
+                title: "Cash flow paralysis",
+                body: "Once a claim goes into the TPA portal, it disappears. Your billing team checks status manually. Denials arrive with vague reason codes. Nobody is watching.",
+              },
+              {
+                stat: "3-5 hrs",
+                title: "Per appeal, per denial",
+                body: "Research the denial. Find the policy clause. Draft the letter. Resubmit. For a billing team of 3, that's a full-time job just to chase what you were already owed.",
+              },
+            ].map((c) => (
+              <div key={c.stat} className="rounded-2xl border border-[#EAE6DE] bg-[#FEFCF8] p-8">
+                <p className="text-3xl font-bold text-[#1E6BFF]">{c.stat}</p>
+                <h3 className="mt-3 font-semibold text-[#0F1F3D]">{c.title}</h3>
+                <p className="mt-2 text-sm text-[#8A8070]">{c.body}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Workflow diagram */}
+      <section className="bg-[#FEFCF8] px-4 py-20 sm:px-6 xl:px-10">
+        <div className="mx-auto max-w-7xl">
+          <p className="text-xs font-semibold uppercase tracking-widest text-[#B0A898]">
+            How it works
+          </p>
+          <h2 className="mt-3 max-w-2xl text-2xl font-bold text-[#0F1F3D] sm:text-3xl">
+            From discharge summary to settlement.
+          </h2>
+          <p className="mt-3 max-w-xl text-sm text-[#8A8070]">
+            Every step automated, every decision auditable, every claim tracked.
+          </p>
+          <div className="mt-10">
+            <WorkflowDiagram />
           </div>
         </div>
       </section>
 
       {/* Payer Intelligence: hero feature */}
-      <section id="payer-intelligence" className="bg-[#0F1F3D] px-4 py-20 sm:px-6 xl:px-10">
+      <section id="payer-intelligence" className="bg-white px-4 py-20 sm:px-6 xl:px-10">
         <div className="mx-auto max-w-7xl">
-          <p className="text-xs font-semibold uppercase tracking-widest text-[#1E6BFF]">
+          <span className="inline-flex items-center rounded-full border border-[#1E6BFF]/20 bg-[#EEF4FF] px-3 py-1 text-xs font-semibold text-[#1E6BFF]">
             ML Payer Intelligence
-          </p>
-          <div className="mt-3 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <h2 className="max-w-xl text-2xl font-bold text-white sm:text-3xl">
+          </span>
+          <div className="mt-4 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <h2 className="max-w-xl text-2xl font-bold text-[#0F1F3D] sm:text-3xl">
               We know what Star Health will cut before you submit.
             </h2>
-            <p className="max-w-md text-sm text-white/50 lg:text-right">
-              LightGBM model trained on carrier rejection history. Every claim line gets a deduction
-              probability, a predicted rupee amount, and a fix.
+            <p className="max-w-md text-sm text-[#8A8070] lg:text-right">
+              LightGBM model trained on carrier rejection history. Every claim line gets a
+              deduction probability, a predicted rupee amount, and a fix.
             </p>
           </div>
 
-          <div className="mt-10">
+          <div className="mt-10 rounded-2xl border border-[#EAE6DE] bg-[#FEFCF8] p-4 sm:p-6">
             <PreCheckDemo />
           </div>
 
-          <div className="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-3">
-            <div className="rounded-xl border border-white/10 bg-white/5 p-6">
-              <p className="text-2xl font-bold text-[#1E6BFF]">42</p>
-              <h3 className="mt-2 font-semibold text-white">Payer rejection profiles</h3>
-              <p className="mt-1.5 text-sm text-white/50">
-                Star Health, ICICI Lombard, SBI General, Bajaj Allianz, Tata AIG, Medi Assist
-                and more - each with known deduction patterns.
-              </p>
-            </div>
-            <div className="rounded-xl border border-white/10 bg-white/5 p-6">
-              <p className="text-2xl font-bold text-[#1E6BFF]">68% → 88%</p>
-              <h3 className="mt-2 font-semibold text-white">First-pass acceptance</h3>
-              <p className="mt-1.5 text-sm text-white/50">
-                The 20-point gap between what hospitals get and what they should get. We close it
-                before the claim leaves the building.
-              </p>
-            </div>
-            <div className="rounded-xl border border-white/10 bg-white/5 p-6">
-              <p className="text-2xl font-bold text-[#1E6BFF]">Gets smarter</p>
-              <h3 className="mt-2 font-semibold text-white">Trained on your data</h3>
-              <p className="mt-1.5 text-sm text-white/50">
-                The model fine-tunes on your hospital&apos;s own remittance history. Predictions improve
-                as your claim volume grows.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* How the audit works */}
-      <section className="bg-[#FEFCF8] px-4 py-20 sm:px-6 xl:px-10">
-        <div className="mx-auto max-w-5xl">
-          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-            How it starts
-          </p>
-          <h2 className="mt-3 max-w-2xl text-2xl font-bold sm:text-3xl">
-            We audit your leakage first. No pitch, just the numbers.
-          </h2>
-          <div className="mt-12 grid grid-cols-1 gap-8 sm:grid-cols-3">
-            {steps.map((s) => (
-              <div key={s.n} className="flex flex-col gap-3">
-                <p className="text-4xl font-bold text-[#E8E0D0]">{s.n}</p>
-                <h3 className="font-semibold">{s.title}</h3>
-                <p className="text-sm text-muted-foreground">{s.body}</p>
+          <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-3">
+            {[
+              { stat: "42", title: "Payer rejection profiles", body: "Star Health, ICICI Lombard, SBI General, Bajaj Allianz, Tata AIG, Medi Assist and more." },
+              { stat: "68% → 88%", title: "First-pass acceptance", body: "The 20-point gap between what hospitals get and what they should. We close it before the claim leaves." },
+              { stat: "Learns over time", title: "Trained on your data", body: "Predictions improve as the model fine-tunes on your hospital's own remittance history." },
+            ].map((c) => (
+              <div key={c.title} className="rounded-2xl border border-[#EAE6DE] bg-white p-6">
+                <p className="text-xl font-bold text-[#1E6BFF]">{c.stat}</p>
+                <h3 className="mt-2 font-semibold text-[#0F1F3D]">{c.title}</h3>
+                <p className="mt-1.5 text-sm text-[#8A8070]">{c.body}</p>
               </div>
             ))}
           </div>
@@ -361,20 +317,20 @@ export default function Home() {
       </section>
 
       {/* Full platform */}
-      <section id="solution" className="bg-[#F4F0E8] px-4 py-20 sm:px-6 xl:px-10">
+      <section id="solution" className="bg-[#FEFCF8] px-4 py-20 sm:px-6 xl:px-10">
         <div className="mx-auto max-w-7xl">
-          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+          <p className="text-xs font-semibold uppercase tracking-widest text-[#B0A898]">
             The platform
           </p>
-          <h2 className="mt-3 max-w-2xl text-2xl font-bold sm:text-3xl">
+          <h2 className="mt-3 max-w-2xl text-2xl font-bold text-[#0F1F3D] sm:text-3xl">
             One platform. The entire claim lifecycle.
           </h2>
           <div className="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {solutions.map((item) => (
-              <div key={item.title} className="rounded-2xl bg-white p-6 shadow-sm">
+              <div key={item.title} className="rounded-2xl border border-[#EAE6DE] bg-white p-6">
                 <item.icon className="size-8 text-[#1E6BFF]" />
-                <h3 className="mt-4 font-semibold">{item.title}</h3>
-                <p className="mt-2 text-sm text-muted-foreground">{item.description}</p>
+                <h3 className="mt-4 font-semibold text-[#0F1F3D]">{item.title}</h3>
+                <p className="mt-2 text-sm text-[#8A8070]">{item.description}</p>
               </div>
             ))}
           </div>
@@ -382,36 +338,36 @@ export default function Home() {
       </section>
 
       {/* ROI */}
-      <section id="impact" className="bg-[#0F1F3D] px-4 py-20 sm:px-6 xl:px-10">
+      <section id="impact" className="bg-white px-4 py-20 sm:px-6 xl:px-10">
         <div className="mx-auto max-w-5xl">
-          <p className="text-xs font-semibold uppercase tracking-widest text-white/50">The impact</p>
-          <h2 className="mt-3 max-w-2xl text-2xl font-bold text-white sm:text-3xl">
+          <p className="text-xs font-semibold uppercase tracking-widest text-[#B0A898]">The impact</p>
+          <h2 className="mt-3 max-w-2xl text-2xl font-bold text-[#0F1F3D] sm:text-3xl">
             What changes at a hospital billing ₹2 crore per month.
           </h2>
-          <div className="mt-10 overflow-x-auto rounded-xl border border-white/10">
+          <div className="mt-10 overflow-x-auto rounded-2xl border border-[#EAE6DE]">
             <table className="w-full min-w-[480px] border-collapse text-sm">
               <thead>
-                <tr className="border-b border-white/10 text-left text-white/50">
-                  <th className="px-5 py-3 font-medium">Metric</th>
-                  <th className="px-5 py-3 font-medium">Before</th>
-                  <th className="px-5 py-3 font-medium">After ClearCycle</th>
+                <tr className="border-b border-[#EAE6DE] text-left text-[#B0A898]">
+                  <th className="bg-[#FEFCF8] px-5 py-3 font-medium">Metric</th>
+                  <th className="bg-[#FEFCF8] px-5 py-3 font-medium">Before</th>
+                  <th className="bg-[#FEFCF8] px-5 py-3 font-medium">After ClearCycle</th>
                 </tr>
               </thead>
               <tbody>
                 {roiRows.map((row, i) => (
                   <tr
                     key={row.metric}
-                    className={i !== roiRows.length - 1 ? "border-b border-white/10" : ""}
+                    className={i !== roiRows.length - 1 ? "border-b border-[#EAE6DE]" : ""}
                   >
-                    <td className="px-5 py-4 text-white">{row.metric}</td>
-                    <td className="px-5 py-4 text-white/50">{row.before}</td>
+                    <td className="px-5 py-4 text-[#0F1F3D]">{row.metric}</td>
+                    <td className="px-5 py-4 text-[#B0A898]">{row.before}</td>
                     <td className="px-5 py-4 font-bold text-[#1E6BFF]">{row.after}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-          <div className="mt-6 rounded-xl border border-[#1E6BFF]/30 bg-[#1E6BFF]/10 px-6 py-5 text-center text-white">
+          <div className="mt-5 rounded-2xl border border-[#BFDBFE] bg-[#EEF4FF] px-6 py-4 text-center text-[#0F1F3D]">
             <span className="font-semibold">₹20-36 lakhs</span> recovered per month vs{" "}
             <span className="font-semibold">₹2-4 lakhs</span> cost. ROI visible within 30 days.
           </div>
@@ -421,17 +377,17 @@ export default function Home() {
       {/* Compliance */}
       <section className="bg-[#FEFCF8] px-4 py-20 sm:px-6 xl:px-10">
         <div className="mx-auto max-w-5xl">
-          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+          <p className="text-xs font-semibold uppercase tracking-widest text-[#B0A898]">
             Built for Indian healthcare
           </p>
-          <h2 className="mt-3 max-w-2xl text-2xl font-bold sm:text-3xl">
+          <h2 className="mt-3 max-w-2xl text-2xl font-bold text-[#0F1F3D] sm:text-3xl">
             Compliance is not an afterthought.
           </h2>
           <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2">
             {compliance.map((item) => (
               <div key={item} className="flex items-start gap-3">
                 <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-[#1E6BFF]" />
-                <p className="text-sm">{item}</p>
+                <p className="text-sm text-[#5C5C6B]">{item}</p>
               </div>
             ))}
           </div>
@@ -439,36 +395,36 @@ export default function Home() {
       </section>
 
       {/* Audit CTA */}
-      <section id="audit" className="bg-[#0F1F3D] px-4 py-20 sm:px-6 xl:px-10">
+      <section id="audit" className="bg-white px-4 py-20 sm:px-6 xl:px-10">
         <div className="mx-auto max-w-3xl">
-          <p className="text-xs font-semibold uppercase tracking-widest text-[#1E6BFF]">
+          <span className="inline-flex items-center rounded-full border border-[#1E6BFF]/20 bg-[#EEF4FF] px-3 py-1 text-xs font-semibold text-[#1E6BFF]">
             Free TPA leakage audit
-          </p>
-          <h2 className="mt-3 text-2xl font-bold text-white sm:text-3xl">
+          </span>
+          <h2 className="mt-4 text-2xl font-bold text-[#0F1F3D] sm:text-3xl">
             Find out exactly how much your hospital is losing.
           </h2>
-          <p className="mt-4 text-base text-white/60">
-            Share 6 months of remittance data. We&apos;ll map your deduction patterns, identify the
+          <p className="mt-4 text-base text-[#8A8070]">
+            Share 6 months of remittance data. We'll map your deduction patterns, identify the
             biggest recoverable amounts, and show you what ClearCycle would change. No pitch until
-            you&apos;ve seen your number.
+            you've seen your number.
           </p>
-          <div className="mt-3 flex flex-wrap gap-4 text-sm text-white/40">
+          <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1.5 text-xs text-[#B0A898]">
             <span>Spots limited to 5 hospitals this month</span>
             <span>·</span>
             <span>3-month pilot included, free</span>
             <span>·</span>
             <span>Data stays in India</span>
           </div>
-          <div className="mt-10">
+          <div className="mt-10 rounded-2xl border border-[#EAE6DE] bg-[#FEFCF8] p-8">
             <AuditForm />
           </div>
-          <p className="mt-8 text-sm text-white/40">
+          <p className="mt-6 text-sm text-[#B0A898]">
             Prefer a call?{" "}
-            <a href="tel:+919163236777" className="text-white/70 underline hover:text-white">
+            <a href="tel:+919163236777" className="text-[#5C5C6B] underline hover:text-[#0F1F3D]">
               +91 91632 36777
             </a>
             {" "}or{" "}
-            <Link href="/contact" className="text-white/70 underline hover:text-white">
+            <Link href="/contact" className="text-[#5C5C6B] underline hover:text-[#0F1F3D]">
               fill out the full form
             </Link>
           </p>

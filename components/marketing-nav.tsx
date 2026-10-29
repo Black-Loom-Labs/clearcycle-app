@@ -22,9 +22,9 @@ export function MarketingNav() {
 
   return (
     <>
-      <div className="w-full bg-[#0F1F3D] px-4 py-2 text-center text-xs font-medium text-white/80">
+      <div className="w-full border-b border-[#BFDBFE] bg-[#EEF4FF] px-4 py-2 text-center text-xs font-medium text-[#1557D4]">
         Limited slots open: free TPA leakage audit for hospitals joining the pilot.{" "}
-        <a href="#audit" className="font-semibold text-[#1E6BFF] hover:underline">Claim yours →</a>
+        <a href="#audit" className="font-semibold underline hover:opacity-80">Claim yours →</a>
       </div>
     <header className="sticky top-0 z-50 border-b border-[#E8E4D8] bg-[#FEFCF8]">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 xl:px-10">
