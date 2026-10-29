@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { AlertTriangle, CheckCircle2, AlertCircle, Loader2, ChevronRight, IndianRupee } from "lucide-react"
+import { Loader2, ChevronRight, IndianRupee } from "lucide-react"
 
 const CLAIM_LINES = [
   { id: "L1", procedure: "Total Knee Arthroplasty", cpt: "27447", icd: "M17.11", amount: 85000 },
@@ -49,24 +49,18 @@ const PAYERS = [
   { id: "sbi_general", label: "SBI General" },
 ]
 
-function RiskBadge({ risk }: { risk: Risk }) {
-  const map = {
-    high: "bg-red-50 text-red-600 border-red-200",
-    medium: "bg-amber-50 text-amber-600 border-amber-200",
-    low: "bg-emerald-50 text-emerald-600 border-emerald-200",
-  }
-  const label = { high: "High", medium: "Medium", low: "Low" }
-  return (
-    <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ${map[risk]}`}>
-      {label[risk]}
-    </span>
+function RiskDot({ risk }: { risk: Risk }) {
+  if (risk === "low") return (
+    <svg className="size-4 shrink-0 text-[#B0A898]" viewBox="0 0 16 16" fill="none">
+      <path d="M3 8l4 4 6-6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   )
-}
-
-function RiskIcon({ risk }: { risk: Risk }) {
-  if (risk === "high") return <AlertTriangle className="size-4 shrink-0 text-red-500" />
-  if (risk === "medium") return <AlertCircle className="size-4 shrink-0 text-amber-500" />
-  return <CheckCircle2 className="size-4 shrink-0 text-emerald-500" />
+  return (
+    <svg className={`size-4 shrink-0 ${risk === "high" ? "text-red-400" : "text-orange-400"}`} viewBox="0 0 16 16" fill="none">
+      <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.2" />
+      <path d="M8 5v3.5M8 10.5v.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+    </svg>
+  )
 }
 
 function fmt(n: number) {
@@ -230,40 +224,43 @@ export function PreCheckDemo() {
               {results.map((r, i) => (
                 <div
                   key={i}
-                  className={`rounded-xl border border-[#EAE6DE] bg-white p-4 transition-all duration-300 ${
+                  className={`relative overflow-hidden rounded-xl border border-[#EAE6DE] bg-white transition-all duration-300 ${
                     i < visibleRows ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"
                   }`}
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-2">
-                      <RiskIcon risk={r.risk} />
-                      <p className="text-sm font-medium text-[#0F1F3D]">
-                        {CLAIM_LINES[i].procedure}
-                      </p>
-                    </div>
-                    <div className="flex shrink-0 items-center gap-2">
-                      <RiskBadge risk={r.risk} />
-                      <span className="text-xs font-semibold text-[#8A8070]">
+                  {/* Left accent stripe for flagged lines */}
+                  {r.risk !== "low" && (
+                    <span className={`absolute inset-y-0 left-0 w-0.5 ${r.risk === "high" ? "bg-red-400" : "bg-orange-300"}`} />
+                  )}
+                  <div className="p-4 pl-5">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-2">
+                        <RiskDot risk={r.risk} />
+                        <p className="text-sm font-medium text-[#0F1F3D]">
+                          {CLAIM_LINES[i].procedure}
+                        </p>
+                      </div>
+                      <span className="shrink-0 text-xs font-semibold text-[#8A8070]">
                         {(r.prob * 100).toFixed(0)}%
                       </span>
                     </div>
+                    {r.reasons.length > 0 && (
+                      <ul className="mt-2 flex flex-col gap-1 pl-6">
+                        {r.reasons.map((reason) => (
+                          <li key={reason} className="text-xs text-[#8A8070]">· {reason}</li>
+                        ))}
+                      </ul>
+                    )}
+                    {r.risk !== "low" && (
+                      <div className="mt-2 flex items-start gap-1.5 border-t border-[#F0EDE6] pt-2">
+                        <IndianRupee className="mt-0.5 size-3 shrink-0 text-[#8A8070]" />
+                        <p className="text-xs text-[#5C5C6B]">
+                          <span className="font-medium text-[#0F1F3D]">{fmt(r.deduction)} at risk</span>
+                          {" — "}{r.action}
+                        </p>
+                      </div>
+                    )}
                   </div>
-                  {r.reasons.length > 0 && (
-                    <ul className="mt-2 flex flex-col gap-1 pl-6">
-                      {r.reasons.map((reason) => (
-                        <li key={reason} className="text-xs text-[#8A8070]">· {reason}</li>
-                      ))}
-                    </ul>
-                  )}
-                  {r.risk !== "low" && (
-                    <div className="mt-2 flex items-start gap-1.5 rounded-lg bg-[#EEF4FF] px-3 py-2">
-                      <IndianRupee className="mt-0.5 size-3 shrink-0 text-[#1E6BFF]" />
-                      <p className="text-xs text-[#5C5C6B]">
-                        <span className="font-medium text-[#0F1F3D]">Expected deduction: </span>
-                        {fmt(r.deduction)} — {r.action}
-                      </p>
-                    </div>
-                  )}
                 </div>
               ))}
             </div>

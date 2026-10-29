@@ -3,6 +3,7 @@ import Link from "next/link"
 import { MarketingFooter } from "@/components/marketing-footer"
 import { MarketingNav } from "@/components/marketing-nav"
 import { PreCheckDemo } from "@/components/pre-check-demo"
+import { HeroClearCheck } from "@/components/hero-clearcheck"
 import { AuditForm } from "@/components/audit-form"
 import { PayerLogoChip } from "@/components/payer-logo-chip"
 import { WorkflowDiagram } from "@/components/workflow-diagram"
@@ -178,20 +179,18 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Right: payer intelligence demo clipped at bottom */}
+            {/* Right: ClearCheck auto-running animation */}
             <div
-              className="relative hidden overflow-hidden rounded-t-2xl border border-[#E8E4D8] bg-[#FAFAF8] shadow-lg lg:block"
-              style={{ maskImage: "linear-gradient(to bottom, black 65%, transparent 100%)" }}
+              className="relative hidden overflow-hidden rounded-2xl border border-[#E8E4D8] bg-white shadow-lg lg:block"
+              style={{ maskImage: "linear-gradient(to bottom, black 70%, transparent 100%)" }}
             >
-              <div className="flex items-center gap-1.5 border-b border-[#EAE6DE] bg-white px-4 py-2.5">
+              <div className="flex items-center gap-1.5 border-b border-[#EAE6DE] bg-[#FAFAF8] px-4 py-2.5">
                 <span className="size-2.5 rounded-full bg-[#E8E4D8]" />
                 <span className="size-2.5 rounded-full bg-[#E8E4D8]" />
                 <span className="size-2.5 rounded-full bg-[#E8E4D8]" />
-                <span className="ml-3 text-xs text-[#B0A898]">ClearCycle - Payer Intelligence</span>
+                <span className="ml-3 text-xs text-[#B0A898]">ClearCheck — claim analysis</span>
               </div>
-              <div className="pointer-events-none select-none">
-                <PreCheckDemo />
-              </div>
+              <HeroClearCheck />
             </div>
           </div>
         </div>
