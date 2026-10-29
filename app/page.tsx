@@ -88,7 +88,7 @@ const solutions = [
   },
   {
     icon: BarChart2,
-    title: "Payer Intelligence",
+    title: "ClearCheck",
     description:
       "Per-line deduction probability scoring before you submit. Flags high-risk lines with the exact reason and fix.",
   },
@@ -148,7 +148,7 @@ export default function Home() {
           <div className="grid grid-cols-1 gap-12 lg:grid-cols-2 lg:items-center">
             <div className="pb-12 lg:pb-20">
               <span className="inline-flex items-center rounded-full border border-[#1E6BFF]/20 bg-[#EEF4FF] px-3 py-1 text-xs font-semibold text-[#1E6BFF]">
-                Payer Intelligence
+                ClearCheck
               </span>
               <h1 className="mt-5 text-4xl font-bold leading-tight text-[#0F1F3D] sm:text-5xl lg:text-[3.25rem]">
                 Your hospital is owed money it will never collect.
@@ -284,11 +284,11 @@ export default function Home() {
       <section id="payer-intelligence" className="bg-white px-4 py-20 sm:px-6 xl:px-10">
         <div className="mx-auto max-w-7xl">
           <span className="inline-flex items-center rounded-full border border-[#1E6BFF]/20 bg-[#EEF4FF] px-3 py-1 text-xs font-semibold text-[#1E6BFF]">
-            Payer Intelligence
+            ClearCheck
           </span>
           <div className="mt-4 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <h2 className="max-w-xl text-2xl font-bold text-[#0F1F3D] sm:text-3xl">
-              We know what Star Health will cut before you submit.
+              ClearCheck knows what Star Health will cut before you submit.
             </h2>
             <p className="max-w-md text-sm text-[#8A8070] lg:text-right">
               Trained on carrier rejection history across 42 payer profiles. Every claim line gets
@@ -302,9 +302,9 @@ export default function Home() {
 
           <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-3">
             {[
-              { stat: "42", title: "Payer rejection profiles", body: "Star Health, ICICI Lombard, SBI General, Bajaj Allianz, Tata AIG, Medi Assist and more." },
-              { stat: "68% → 88%", title: "First-pass acceptance", body: "The 20-point gap between what hospitals get and what they should. We close it before the claim leaves." },
-              { stat: "Learns over time", title: "Trained on your data", body: "Predictions improve as the model fine-tunes on your hospital's own remittance history." },
+              { stat: "42", title: "Payer profiles in ClearCheck", body: "Star Health, ICICI Lombard, SBI General, Bajaj Allianz, Tata AIG, Medi Assist and more." },
+              { stat: "68% → 88%", title: "First-pass acceptance", body: "The 20-point gap between what hospitals get and what they should. ClearCheck closes it before the claim leaves." },
+              { stat: "Learns over time", title: "Trained on your data", body: "ClearCheck fine-tunes on your hospital's own remittance history. Predictions get sharper every month." },
             ].map((c) => (
               <div key={c.title} className="rounded-2xl border border-[#EAE6DE] bg-white p-6">
                 <p className="text-xl font-bold text-[#1E6BFF]">{c.stat}</p>

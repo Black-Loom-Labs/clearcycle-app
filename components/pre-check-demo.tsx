@@ -104,7 +104,7 @@ export function PreCheckDemo() {
       {/* Header */}
       <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-xs font-semibold tracking-widest text-[#1E6BFF]">LIVE DEMO</p>
+          <p className="text-xs font-semibold tracking-widest text-[#1E6BFF]">CLEARCHECK — LIVE DEMO</p>
           <h3 className="mt-1 text-lg font-bold text-[#0F1F3D]">
             Try it — see deduction risk before you submit
           </h3>

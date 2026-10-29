@@ -10,7 +10,7 @@ const CONTACT_HREF = "/contact"
 
 const navLinks = [
   { href: "#solution", label: "Product" },
-  { href: "#payer-intelligence", label: "Payer Intelligence" },
+  { href: "#payer-intelligence", label: "ClearCheck" },
   { href: "#impact", label: "Impact" },
   { href: "/docs", label: "Developers" },
   { href: "/blog", label: "Blog" },
