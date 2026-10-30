@@ -16,9 +16,18 @@ export function VslPlayer() {
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting && !manuallyPaused.current) {
-          video.play().catch(() => {})
+          video.muted = false
+          setMuted(false)
+          video.play().catch(() => {
+            // browser blocked unmuted autoplay — fall back to muted
+            video.muted = true
+            setMuted(true)
+            video.play().catch(() => {})
+          })
         } else if (!entry.isIntersecting) {
           video.pause()
+          video.muted = true
+          setMuted(true)
         }
       },
       { threshold: 0.4 }
