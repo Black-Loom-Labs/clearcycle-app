@@ -279,6 +279,31 @@ export default function Home() {
         </div>
       </section>
 
+      {/* VSL video */}
+      <section className="bg-white px-4 py-20 sm:px-6 xl:px-10">
+        <div className="mx-auto max-w-4xl">
+          <p className="text-center text-xs font-semibold uppercase tracking-widest text-[#B0A898]">
+            See it in action
+          </p>
+          <h2 className="mt-3 text-center text-2xl font-bold text-[#0F1F3D] sm:text-3xl">
+            Two minutes. The full picture.
+          </h2>
+          <p className="mt-3 text-center text-sm text-[#8A8070]">
+            Watch how ClearCycle catches deductions before submission, tracks every claim to settlement, and generates appeals automatically.
+          </p>
+          <div className="mt-10 overflow-hidden rounded-2xl border border-[#EAE6DE] bg-[#FAFAF8] shadow-sm">
+            <video
+              src="/vsl.mp4"
+              controls
+              playsInline
+              preload="metadata"
+              className="w-full"
+              style={{ display: "block" }}
+            />
+          </div>
+        </div>
+      </section>
+
       {/* Workflow diagram */}
       <section className="bg-[#FEFCF8] px-4 py-20 sm:px-6 xl:px-10">
         <div className="mx-auto max-w-7xl">
