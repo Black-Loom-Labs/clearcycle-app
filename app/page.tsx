@@ -286,7 +286,7 @@ export default function Home() {
             See it in action
           </p>
           <h2 className="mt-3 text-center text-2xl font-bold text-[#0F1F3D] sm:text-3xl">
-            Two minutes. The full picture.
+            The full picture.
           </h2>
           <p className="mt-3 text-center text-sm text-[#8A8070]">
             Watch how ClearCycle catches deductions before submission, tracks every claim to settlement, and generates appeals automatically.
