@@ -7,6 +7,7 @@ import { HeroClearCheck } from "@/components/hero-clearcheck"
 import { AuditForm } from "@/components/audit-form"
 import { PayerLogoChip } from "@/components/payer-logo-chip"
 import { WorkflowDiagram } from "@/components/workflow-diagram"
+import { VslPlayer } from "@/components/vsl-player"
 import {
   Brain,
   FileCheck,
@@ -291,15 +292,8 @@ export default function Home() {
           <p className="mt-3 text-center text-sm text-[#8A8070]">
             Watch how ClearCycle catches deductions before submission, tracks every claim to settlement, and generates appeals automatically.
           </p>
-          <div className="mt-10 overflow-hidden rounded-2xl border border-[#EAE6DE] bg-[#FAFAF8] shadow-sm">
-            <video
-              src="/vsl.mp4"
-              controls
-              playsInline
-              preload="metadata"
-              className="w-full"
-              style={{ display: "block" }}
-            />
+          <div className="mt-10">
+            <VslPlayer />
           </div>
         </div>
       </section>
